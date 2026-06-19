@@ -17,15 +17,11 @@ An all-in-one, automated deployment toolkit designed to completely set up a fres
 <br>
 
 ## ⚡ Quick Run
-Copy and run this single command with root privileges on your fresh VPS:
+Copy and run this single command with root privileges on your fresh VPS. It automatically installs required dependencies, clones the toolkit, and launches the setup wizard:
 
 ```bash
-git clone https://github.com/bluefalcon2270/bluefalcon-ultimate-toolkit.git /opt/bluefalcon-ultimate-toolkit
-cd /opt/bluefalcon-ultimate-toolkit
-chmod +x setup.sh && sudo ./setup.sh
+sudo apt-get update -y && sudo apt-get install git -y && git clone https://github.com/bluefalcon2270/bluefalcon-ultimate-toolkit.git /opt/bluefalcon-ultimate-toolkit && cd /opt/bluefalcon-ultimate-toolkit && chmod +x setup.sh && sudo ./setup.sh
 ```
-
-*(Note: Since the project is now modular, it is recommended to clone the repository rather than pulling a single raw script.)*
 
 <br>
 
