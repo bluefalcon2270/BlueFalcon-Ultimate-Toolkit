@@ -85,14 +85,28 @@ LIMIT=$(sqlite3 "${APP_DIR}/panel.db" "SELECT conn_limit FROM settings LIMIT 1;"
 if [ "$LIMIT" == "unlimited" ]; then echo "duplicate-cn" >> /etc/openvpn/server/server.conf; fi
 echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-openvpn.conf
 sysctl -p /etc/sysctl.d/99-openvpn.conf > /dev/null 2>&1
+# --- Bulletproof Firewall & NAT Routing ---
+sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
+
 if command -v ufw >/dev/null 2>&1; then
     sed -i 's/DEFAULT_FORWARD_POLICY="DROP"/DEFAULT_FORWARD_POLICY="ACCEPT"/' /etc/default/ufw
     ufw reload >/dev/null 2>&1
 fi
-if ! iptables -t nat -C POSTROUTING -s 10.8.0.0/24 -j MASQUERADE 2>/dev/null; then
-    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j MASQUERADE
-    netfilter-persistent save > /dev/null 2>&1
+
+# Dynamically find the main outward-facing network interface (e.g., eth0, ens3)
+ETH=$(ip -4 route ls | grep default | awk '{print $5}' | head -1)
+
+# Allow traffic in and out of the VPN tunnel
+iptables -I FORWARD 1 -i tun+ -j ACCEPT
+iptables -I FORWARD 1 -o tun+ -j ACCEPT
+iptables -I FORWARD 1 -s 10.8.0.0/24 -j ACCEPT
+
+# Masquerade (hide) the VPN traffic behind the server's public IP
+if ! iptables -t nat -C POSTROUTING -s 10.8.0.0/24 -o $ETH -j MASQUERADE 2>/dev/null; then
+    iptables -t nat -I POSTROUTING 1 -s 10.8.0.0/24 -o $ETH -j MASQUERADE
 fi
+
+netfilter-persistent save > /dev/null 2>&1
 systemctl restart openvpn-server@server
 systemctl enable openvpn-server@server > /dev/null 2>&1
 echo -e "\n[OK] OPENVPN CORE DEPLOYED SUCCESSFULLY."
