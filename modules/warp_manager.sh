@@ -26,8 +26,13 @@ install_cloudflare_packages() {
     curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg >> "${WARP_LOG}" 2>&1
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/cloudflare-client.list >/dev/null
     apt-get update -y >> "${WARP_LOG}" 2>&1
+    
+    # Bulletproof check: Simulate installation to see if openresolv actually exists
     local dns_pkg="resolvconf"
-    if apt-cache show openresolv >/dev/null 2>&1; then dns_pkg="openresolv"; fi
+    if apt-get install -s openresolv >/dev/null 2>&1; then 
+        dns_pkg="openresolv"
+    fi
+    
     CURRENT_LOG="${WARP_LOG}" run_with_spinner "Installing Cloudflare Packages" apt-get install cloudflare-warp iproute2 "${dns_pkg}" wireguard-tools -y >> "${WARP_LOG}" 2>&1
 }
 
