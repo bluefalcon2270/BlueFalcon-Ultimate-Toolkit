@@ -23,7 +23,7 @@ source "$(dirname "$0")/modules/panel_manager.sh"
 show_main_menu() {
     clear
     echo -e "${BOLD_BLUE}=====================================================${NC}"
-    echo -e "${BOLD_BLUE}                    🧰 BlueFalcon Ultimate Toolkit (v1.9) 🧰             ${NC}"
+    echo -e "${BOLD_BLUE}       🧰 BlueFalcon Ultimate Toolkit (v1.9) 🧰       ${NC}"
     echo -e "${BOLD_BLUE}=====================================================${NC}"
     echo ""
     echo "1. Essential Tools"
