@@ -4,7 +4,7 @@
 
 **The fast, safe, and modular way to prepare, route, and manage a fresh Linux server.**
 
-![Version](https://img.shields.io/badge/Version-v1.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-v1.1-blue?style=for-the-badge)
 ![Linux](https://img.shields.io/badge/Platform-Debian%20%7C%20Ubuntu-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 [![Language](https://img.shields.io/badge/Written%20in-Shell/Python-121011?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
@@ -31,25 +31,28 @@ Once installed, simply type `bf-ui` from anywhere in your terminal to instantly 
 ## 🏗️ System Architecture
 The toolkit is structured for maximum maintainability and protocol independence:
 
-* **Universal Web Panel (`/panel`):** The Flask-based MVC web dashboard sits entirely in the root directory. This ensures it remains strictly independent of any single VPN protocol (like OpenVPN), allowing easy expansion for future protocols like WireGuard or Xray.
-* **Centralized Utilities (`/modules/essential_tools.sh`):** Core dependencies and advanced environments like Docker are treated as standard packages within the core utility deployment, streamlining the setup process into one highly efficient module.
+* **Universal Web Panel (`/panel`):** The Flask-based MVC web dashboard sits entirely in the root directory. This ensures it remains strictly independent of any single VPN protocol, allowing easy expansion for future protocols.
+* **Centralized Utilities (`/modules/essential_tools.sh`):** Core dependencies and advanced environments like Docker are treated as standard packages within the core utility deployment.
 * **Isolated VPN Engines (`/vpn-scripts`):** Backend execution scripts are categorized by protocol, ensuring easy debugging and safe updates without cross-contamination.
 
 <br>
 
 ## 🌟 Features
 
-### 1️⃣ Essential Tools
+### 1️⃣ System Essentials
 * **Update System:** Run standard package updates non-interactively.
 * **System Packages:** Installs a critical checklist of packages (`nano`, `curl`, `git`, `htop`, `ufw`, `iptables`, and the complete `docker-ce` engine & compose plugins).
 * **SSH Settings:** Change your SSH port, root password, and securely toggle password vs. key logins directly from a status dashboard.
 
-### 2️⃣ Universal Web Panel & OpenVPN
+### 2️⃣ Web Panel Management
 * **Live Dashboards:** Monitor your server's live health (CPU, RAM, Disk, Network) with real-time dynamic graphs.
-* **Protocol Execution:** Currently ships with the OpenVPN engine for automated deployment, traffic tracking, and automated profile generation. 
-* **One-Click Controls:** Pause/resume users, set expiry dates, and download mobile/desktop profiles instantly.
+* **Web UI Provisioning:** Deploys a Flask-based web application to handle protocol configurations securely over a dedicated port.
 
-### 3️⃣ Cloudflare WARP
+### 3️⃣ OpenVPN Management
+* **Terminal & Web Sync:** Create, pause, and revoke users directly from the terminal, with all changes instantly reflected in the Web Panel database.
+* **Automated Profiles:** Download mobile/desktop profiles instantly.
+
+### 4️⃣ Cloudflare WARP
 * **Dual-Stack Routing:** Hide your server's true IP and bypass restrictions by routing IPv4 and/or IPv6 traffic through Cloudflare's WireGuard network (`wgcf`).
 * **WARP+ Support:** Upgrade your connection instantly using a premium license key.
 * **Modern Dashboard:** Displays active connection statuses, server IPs, and WARP masking IPs via modern routing cards in the web panel.

@@ -1,6 +1,9 @@
+#!/bin/bash
 # ==============================================================================
-# --- MODULE 3: Universal Web Panel Deployment ---
+# --- MODULE 2: Web Panel Management ---
 # ==============================================================================
+
+APP_DIR="/opt/bluefalcon-ultimate-toolkit/panel"
 
 install_panel() {
     clear
@@ -11,21 +14,12 @@ install_panel() {
     CURRENT_LOG="${LOG_FILE}" run_with_spinner "Installing dependencies" apt-get install -y python3 python3-flask python3-gunicorn python3-psutil sqlite3 curl cron gunicorn iptables iptables-persistent iproute2 netcat-openbsd
 
     deploy_panel_files() {
-        # Create deployment directories
         mkdir -p "${APP_DIR}/configs" /var/log/bluefalcon-panel "${APP_DIR}/scripts"
-        
-        # Determine the root directory of the repository (where setup.sh is located)
         local REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
         
-        # Copy independent web panel
         cp -r "${REPO_DIR}/panel/"* "${APP_DIR}/"
-        
-        # Copy OpenVPN scripts to the scripts directory
         cp -r "${REPO_DIR}/vpn-scripts/openvpn/"* "${APP_DIR}/scripts/"
-        
-        # Copy WARP scripts to the scripts directory
         cp -r "${REPO_DIR}/vpn-scripts/warp/"* "${APP_DIR}/scripts/"
-        
         chmod +x "${APP_DIR}/scripts/"*.sh
     }
     
@@ -63,16 +57,16 @@ EOF
 
     CURRENT_LOG="${LOG_FILE}" run_with_spinner "Starting Web Panel Engine" bash -c "systemctl daemon-reload && systemctl enable bluefalcon-panel && systemctl restart bluefalcon-panel"
 
-    IPV4=$(curl -s -4 ifconfig.me || echo "Unknown")
-    echo -e "\n[ ${GREEN}✔${NC} ] BLUEFALCON PANEL DEPLOYED SUCCESSFULLY!"
-    echo -e "Open your browser to complete OpenVPN setup: ${YELLOW}http://$IPV4:2020${NC}\n"
+    IPV4=$(ip -4 addr show $(ip route | awk '/default/ {print $5}' | head -1) | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+    echo -e "\n[ ${GREEN}✔${NC} ] WEB PANEL DEPLOYED SUCCESSFULLY!"
+    echo -e "Open your browser to configure OpenVPN: ${YELLOW}http://$IPV4:2020${NC}\n"
     pause_execution
 }
 
 uninstall_panel() {
     clear
     echo ""
-    read -rp "Uninstall OpenVPN & Web Panel? All user data will be lost. (y/N): " confirm
+    read -rp "Uninstall Web Panel & OpenVPN? All user data will be lost. (y/N): " confirm
     if [[ "${confirm,,}" == "y" ]]; then
         echo ""
         CURRENT_LOG="${LOG_FILE}" run_with_spinner "Removing files, services, and packages" bash -c "systemctl stop bluefalcon-panel openvpn-server@server; systemctl disable bluefalcon-panel openvpn-server@server; apt-get remove --purge -y openvpn iptables-persistent python3-psutil; rm -rf ${APP_DIR} /etc/openvpn /etc/systemd/system/bluefalcon-panel.service /var/log/bluefalcon-panel /var/log/openvpn /etc/cron.daily/bluefalcon-panel-expiry; systemctl daemon-reload"
@@ -87,10 +81,10 @@ manage_panel() {
     while true; do
         clear
         echo -e "${BOLD_BLUE}-----------------------------------------------------${NC}"
-        echo -e "${BOLD_BLUE}                 OpenVPN & Web Panel                 ${NC}"
+        echo -e "${BOLD_BLUE}                Web Panel Management                 ${NC}"
         echo -e "${BOLD_BLUE}-----------------------------------------------------${NC}"
         
-        IPV4=$(curl -s -4 ifconfig.me || echo "Unknown")
+        IPV4=$(ip -4 addr show $(ip route | awk '/default/ {print $5}' | head -1) | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
         PANEL_PORT="2020"
         ADMIN_USER="Not Set"
         ADMIN_PASS="Not Set"
@@ -98,10 +92,8 @@ manage_panel() {
         if [ -f "${APP_DIR}/panel.db" ]; then
             PANEL_PORT=$(sqlite3 "${APP_DIR}/panel.db" "SELECT panel_port FROM settings LIMIT 1;" 2>/dev/null)
             PANEL_PORT=${PANEL_PORT:-2020}
-            
             ADMIN_USER=$(sqlite3 "${APP_DIR}/panel.db" "SELECT username FROM admin LIMIT 1;" 2>/dev/null)
             ADMIN_USER=${ADMIN_USER:-"Not Set"}
-            
             ADMIN_PASS=$(sqlite3 "${APP_DIR}/panel.db" "SELECT password FROM admin LIMIT 1;" 2>/dev/null)
             ADMIN_PASS=${ADMIN_PASS:-"Not Set"}
         fi
@@ -111,16 +103,13 @@ manage_panel() {
         echo -e " Admin Password:      ${CYAN}${ADMIN_PASS}${NC}"
         
         if systemctl is-active --quiet bluefalcon-panel; then echo -e " Web Panel:           [ ${GREEN}✔${NC} ] Active"; else echo -e " Web Panel:           [ ${RED}✖${NC} ] Offline"; fi
-        if systemctl is-active --quiet openvpn-server@server; then echo -e " OpenVPN Core:        [ ${GREEN}✔${NC} ] Active"; else echo -e " OpenVPN Core:        [ ${RED}✖${NC} ] Offline"; fi
-        if [ -d "$APP_DIR" ]; then echo -e " Installation Files:  [ ${GREEN}✔${NC} ] Installed"; else echo -e " Installation Files:  [ ${RED}✖${NC} ] Missing"; fi
         
         echo -e "${BOLD_BLUE}-----------------------------------------------------${NC}"
         echo ""
-        echo "1. Install OpenVPN"
-        echo "2. Uninstall OpenVPN"
+        echo "1. Install Web Panel"
+        echo "2. Uninstall Web Panel & VPN"
         echo "3. View Installation Logs"
-        echo "4. View OpenVPN Core Logs"
-        echo "5. View Web Panel Logs"
+        echo "4. View Web Panel Logs"
         echo "0. Return"
         echo ""
         
@@ -136,13 +125,6 @@ manage_panel() {
                 trap cleanup SIGINT SIGTERM
                 ;;
             4) 
-                clear
-                echo -e "${BOLD_BLUE}--- OpenVPN Core Logs ---${NC}\nStreaming real-time service logs. Press Ctrl+C to exit.\n"
-                trap 'true' SIGINT
-                journalctl -u openvpn-server@server -f -n 50
-                trap cleanup SIGINT SIGTERM
-                ;;
-            5) 
                 clear
                 echo -e "${BOLD_BLUE}--- Web Panel Logs ---${NC}\nStreaming real-time service logs. Press Ctrl+C to exit.\n"
                 trap 'true' SIGINT
