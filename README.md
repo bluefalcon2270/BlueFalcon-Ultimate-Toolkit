@@ -4,7 +4,7 @@
 
 **The fast, safe, and modular way to prepare, route, and manage a fresh Linux server.**
 
-![Version](https://img.shields.io/badge/Version-v1.1-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-v1.2-blue?style=for-the-badge)
 ![Linux](https://img.shields.io/badge/Platform-Debian%20%7C%20Ubuntu-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 [![Language](https://img.shields.io/badge/Written%20in-Shell/Python-121011?style=for-the-badge&logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
@@ -24,14 +24,14 @@ Run this single command with root privileges on your fresh VPS. It acts as an in
 bash <(curl -Ls https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-ultimate-toolkit/main/install.sh)
 ```
 
-Once installed, simply type `bf-ui` from anywhere in your terminal to instantly launch the master control panel!
+**Global Shortcut:** Once installed, simply type `bf-ui` from anywhere in your terminal to instantly launch the master control panel! *(On first run, the toolkit will automatically bypass the terminal menu and instantly deploy the Web Panel Initialization Wizard).*
 
 <br>
 
 ## 🏗️ System Architecture
-The toolkit is structured for maximum maintainability and protocol independence:
+The toolkit is structured for maximum maintainability and professional scaling:
 
-* **Universal Web Panel (`/panel`):** The Flask-based MVC web dashboard sits entirely in the root directory. This ensures it remains strictly independent of any single VPN protocol, allowing easy expansion for future protocols.
+* **Sanaei-Style Web UI (`/panel`):** A Flask-based MVC web dashboard featuring a persistent left-navigation sidebar, separating routing, management, and system logs into dedicated views.
 * **Centralized Utilities (`/modules/essential_tools.sh`):** Core dependencies and advanced environments like Docker are treated as standard packages within the core utility deployment.
 * **Isolated VPN Engines (`/vpn-scripts`):** Backend execution scripts are categorized by protocol, ensuring easy debugging and safe updates without cross-contamination.
 
@@ -44,12 +44,14 @@ The toolkit is structured for maximum maintainability and protocol independence:
 * **System Packages:** Installs a critical checklist of packages (`nano`, `curl`, `git`, `htop`, `ufw`, `iptables`, and the complete `docker-ce` engine & compose plugins).
 * **SSH Settings:** Change your SSH port, root password, and securely toggle password vs. key logins directly from a status dashboard.
 
-### 2️⃣ Web Panel Management
-* **Live Dashboards:** Monitor your server's live health (CPU, RAM, Disk, Network) with real-time dynamic graphs.
-* **Web UI Provisioning:** Deploys a Flask-based web application to handle protocol configurations securely over a dedicated port.
+### 2️⃣ Master Web Panel & Initialization
+* **Unified Setup Wizard:** Configure your OpenVPN engine, panel credentials, and WARP endpoints from a single, centralized web setup page.
+* **Live SSE Streaming:** Watch background deployment scripts execute in real-time directly inside your browser.
+* **Centralized Log Center:** Read `journalctl` outputs for OpenVPN, WARP, and System services directly from the web browser without SSHing into the server.
 
 ### 3️⃣ OpenVPN Management
 * **Terminal & Web Sync:** Create, pause, and revoke users directly from the terminal, with all changes instantly reflected in the Web Panel database.
+* **Live Dashboards:** Monitor your server's live health (CPU, RAM, Disk, Network) with real-time dynamic graphs.
 * **Automated Profiles:** Download mobile/desktop profiles instantly.
 
 ### 4️⃣ Cloudflare WARP
