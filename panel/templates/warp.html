@@ -5,7 +5,6 @@
 {% block content %}
 <div class="max-w-5xl space-y-6">
     
-    <!-- Status Header -->
     <div class="material-card p-6 flex justify-between items-center">
         <div>
             <h2 class="text-xl font-semibold text-gray-800">Routing Engine</h2>
@@ -18,9 +17,7 @@
         {% endif %}
     </div>
 
-    <!-- Routing Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- IPv4 -->
         <div class="material-card p-8 relative overflow-hidden">
             {% if trace.v4_status in ['on', 'plus'] %}
                 <div class="absolute top-0 left-0 w-full h-1 bg-[#137333]"></div>
@@ -51,7 +48,6 @@
             </div>
         </div>
 
-        <!-- IPv6 -->
         <div class="material-card p-8 relative overflow-hidden">
             {% if trace.v6_status in ['on', 'plus'] %}
                 <div class="absolute top-0 left-0 w-full h-1 bg-[#137333]"></div>
@@ -83,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Management / Setup -->
     <div class="material-card p-8">
         {% if is_installed %}
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -93,11 +88,11 @@
                 </div>
                 <div class="flex gap-4">
                     <a href="/warp/action/toggle" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-xl font-medium transition">Toggle Service</a>
-                    <a href="/warp/action/uninstall" onclick="return confirm('Purge WARP entirely?')" class="bg-[#FCE8E6] hover:bg-[#FAD2CF] text-[#B3261E] px-6 py-3 rounded-xl font-medium transition">Purge Engine</a>
+                    <a href="/warp/action/uninstall" onclick="if(confirm('Purge WARP entirely?')) { showWarpOverlay('Purging Engine', 'Removing packages and routing rules. Please wait...'); return true; } return false;" class="bg-[#FCE8E6] hover:bg-[#FAD2CF] text-[#B3261E] px-6 py-3 rounded-xl font-medium transition">Purge Engine</a>
                 </div>
             </div>
         {% else %}
-            <form action="/warp/action/install" method="POST" class="max-w-2xl">
+            <form action="/warp/action/install" method="POST" class="max-w-2xl" onsubmit="showWarpOverlay('Deploying WARP Engine', 'Negotiating with Cloudflare servers. This takes 15-30 seconds. Please wait...');">
                 <h3 class="text-lg font-semibold text-gray-800 mb-6">Install WARP Shielding</h3>
                 <div class="space-y-5">
                     <div>
@@ -118,4 +113,25 @@
         {% endif %}
     </div>
 </div>
+
+<div id="warpLoadingOverlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex-col items-center justify-center">
+    <div class="material-card p-8 flex flex-col items-center max-w-sm w-full text-center border border-gray-100 shadow-2xl">
+        <svg class="animate-spin h-10 w-10 text-[#0B57D0] mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <h3 id="overlayTitle" class="text-xl font-bold text-gray-800">Processing</h3>
+        <p id="overlayDesc" class="text-sm text-gray-500 mt-2 font-medium">Please wait...</p>
+    </div>
+</div>
+
+<script>
+    function showWarpOverlay(title, description) {
+        document.getElementById('overlayTitle').innerText = title;
+        document.getElementById('overlayDesc').innerText = description;
+        const overlay = document.getElementById('warpLoadingOverlay');
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+</script>
 {% endblock %}

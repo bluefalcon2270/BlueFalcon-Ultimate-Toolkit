@@ -265,13 +265,30 @@ def warp_dashboard():
 def warp_action(action):
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     script_path = f"{APP_DIR}/scripts/action.sh"
+    
     if action == "install":
         target = request.form.get('target', '3')
         key = request.form.get('license', 'free')
-        subprocess.Popen(['bash', script_path, 'install', target, key])
-        time.sleep(4)
-    elif action == "toggle": os.system(f"bash {script_path} toggle")
-    elif action == "uninstall": os.system(f"bash {script_path} uninstall")
+        process = subprocess.Popen(['bash', script_path, 'install', target, key])
+        process.wait() # Block until install finishes
+        
+        conn = get_db()
+        conn.execute('UPDATE warp SET is_installed=1')
+        conn.commit()
+        conn.close()
+        
+    elif action == "toggle": 
+        os.system(f"bash {script_path} toggle")
+        
+    elif action == "uninstall": 
+        process = subprocess.Popen(['bash', script_path, 'uninstall'])
+        process.wait() # Block until uninstall finishes
+        
+        conn = get_db()
+        conn.execute('UPDATE warp SET is_installed=0')
+        conn.commit()
+        conn.close()
+        
     return redirect(url_for('warp_dashboard'))
 
 # --- Log Center ---
