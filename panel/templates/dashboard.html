@@ -7,19 +7,19 @@
     <!-- Server Hardware Status -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- CPU Card -->
-        <div class="material-card p-6 flex flex-col">
+        <div class="material-card p-6 pb-8 relative overflow-hidden flex flex-col">
             <div class="flex justify-between items-start mb-4">
                 <span class="text-gray-500 font-medium">CPU Usage</span>
                 <span id="cpu_val" class="text-2xl font-bold text-gray-800">0%</span>
             </div>
-            <div class="w-full bg-gray-100 h-1.5 material-pill overflow-hidden mt-auto">
+            <div id="cpu_cores_container" class="mt-2 grid grid-cols-2 gap-4"></div>
+            <div class="absolute bottom-0 left-0 w-full bg-[#1F1F22] h-1.5">
                 <div id="cpu_bar" class="bg-[#0B57D0] h-full transition-all duration-500 ease-out" style="width: 0%"></div>
             </div>
-            <div id="cpu_cores_container" class="mt-4 grid grid-cols-2 gap-4"></div>
         </div>
 
         <!-- RAM Card -->
-        <div class="material-card p-6 flex flex-col">
+        <div class="material-card p-6 pb-8 relative overflow-hidden flex flex-col">
             <div class="flex justify-between items-start mb-4">
                 <span class="text-gray-500 font-medium">Memory</span>
                 <div class="text-right">
@@ -27,13 +27,13 @@
                     <span id="ram_detail" class="text-sm text-gray-400 mt-1">0 MB / 0 GB</span>
                 </div>
             </div>
-            <div class="w-full bg-gray-100 h-1.5 material-pill overflow-hidden mt-auto">
+            <div class="absolute bottom-0 left-0 w-full bg-[#1F1F22] h-1.5">
                 <div id="ram_bar" class="bg-[#0B57D0] h-full transition-all duration-500 ease-out" style="width: 0%"></div>
             </div>
         </div>
 
         <!-- Storage Card -->
-        <div class="material-card p-6 flex flex-col">
+        <div class="material-card p-6 pb-8 relative overflow-hidden flex flex-col">
             <div class="flex justify-between items-start mb-4">
                 <span class="text-gray-500 font-medium">Storage</span>
                 <div class="text-right">
@@ -41,7 +41,7 @@
                     <span id="disk_detail" class="text-sm text-gray-400 mt-1">0 GB / 0 GB</span>
                 </div>
             </div>
-            <div class="w-full bg-gray-100 h-1.5 material-pill overflow-hidden mt-auto">
+            <div class="absolute bottom-0 left-0 w-full bg-[#1F1F22] h-1.5">
                 <div id="disk_bar" class="bg-[#0B57D0] h-full transition-all duration-500 ease-out" style="width: 0%"></div>
             </div>
         </div>
@@ -81,10 +81,74 @@
             </div>
         </div>
     </div>
+
+    <!-- Network Chart -->
+    <div class="material-card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-gray-500 font-medium">Network Traffic (Live)</span>
+        </div>
+        <div class="w-full h-64">
+            <canvas id="trafficChart"></canvas>
+        </div>
+    </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     let lastRx = 0, lastTx = 0, firstPoll = true;
+    
+    // Initialize Chart.js
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+    const gradientRx = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientRx.addColorStop(0, 'rgba(168, 199, 250, 0.4)');
+    gradientRx.addColorStop(1, 'rgba(168, 199, 250, 0.0)');
+    
+    const gradientTx = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientTx.addColorStop(0, 'rgba(242, 139, 130, 0.4)');
+    gradientTx.addColorStop(1, 'rgba(242, 139, 130, 0.0)');
+
+    const trafficChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [
+                {
+                    label: 'Download (KB/s)',
+                    borderColor: '#A8C7FA',
+                    backgroundColor: gradientRx,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    data: Array(20).fill(0)
+                },
+                {
+                    label: 'Upload (KB/s)',
+                    borderColor: '#F28B82',
+                    backgroundColor: gradientTx,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    data: Array(20).fill(0)
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 500 },
+            plugins: {
+                legend: { labels: { color: '#D1D5DB' } }
+            },
+            scales: {
+                x: { display: false },
+                y: {
+                    grid: { color: '#2C2C2E' },
+                    ticks: { color: '#9CA3AF' }
+                }
+            }
+        }
+    });
+
     function formatSpeed(bytes) {
         if (bytes < 1024) return bytes + " B/s";
         else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB/s";
@@ -99,7 +163,7 @@
             coresContainer.innerHTML = '';
             if (data.cpu_cores) {
                 data.cpu_cores.forEach((coreLoad, index) => {
-                    coresContainer.insertAdjacentHTML('beforeend', `<div><div class="flex justify-between text-xs text-gray-500 mb-1"><span>Core ${index}</span><span>${coreLoad.toFixed(0)}%</span></div><div class="w-full bg-gray-100 h-1 material-pill"><div class="bg-gray-400 h-1 material-pill" style="width: ${coreLoad}%"></div></div></div>`);
+                    coresContainer.insertAdjacentHTML('beforeend', `<div><div class="flex justify-between text-xs text-gray-500 mb-1"><span>Core ${index}</span><span>${coreLoad.toFixed(0)}%</span></div><div class="w-full bg-[#1F1F22] h-1 material-pill"><div class="bg-gray-500 h-1 material-pill" style="width: ${coreLoad}%"></div></div></div>`);
                 });
             }
             
@@ -114,8 +178,17 @@
             
             // Network
             if (!firstPoll) {
-                document.getElementById('net_rx_val').innerText = formatSpeed(Math.max(0, (data.net_rx - lastRx) / 2));
-                document.getElementById('net_tx_val').innerText = formatSpeed(Math.max(0, (data.net_tx - lastTx) / 2));
+                let rxSpeed = Math.max(0, (data.net_rx - lastRx) / 2);
+                let txSpeed = Math.max(0, (data.net_tx - lastTx) / 2);
+                
+                document.getElementById('net_rx_val').innerText = formatSpeed(rxSpeed);
+                document.getElementById('net_tx_val').innerText = formatSpeed(txSpeed);
+                
+                trafficChart.data.datasets[0].data.push(rxSpeed / 1024);
+                trafficChart.data.datasets[0].data.shift();
+                trafficChart.data.datasets[1].data.push(txSpeed / 1024);
+                trafficChart.data.datasets[1].data.shift();
+                trafficChart.update('none');
             }
             lastRx = data.net_rx; lastTx = data.net_tx; firstPoll = false;
         });

@@ -20,6 +20,8 @@ source "${SCRIPT_DIR}/modules/essential_tools.sh"
 source "${SCRIPT_DIR}/modules/panel_manager.sh"
 source "${SCRIPT_DIR}/modules/openvpn_manager.sh"
 source "${SCRIPT_DIR}/modules/warp_manager.sh"
+source "${SCRIPT_DIR}/modules/backup_manager.sh"
+source "${SCRIPT_DIR}/modules/logs_manager.sh"
 
 # ==============================================================================
 # --- God Script Main Execution ---
@@ -30,10 +32,12 @@ show_main_menu() {
     echo -e "${BOLD_BLUE}       🧰 BlueFalcon Ultimate Toolkit (v2.4) 🧰       ${NC}"
     echo -e "${BOLD_BLUE}=====================================================${NC}"
     echo ""
-    echo "1. System Essentials"
-    echo "2. Web Panel Management"
-    echo "3. OpenVPN Management"
-    echo "4. Cloudflare WARP"
+    echo "1. Web Panel"
+    echo "2. OpenVPN"
+    echo "3. WARP"
+    echo "4. Essentials"
+    echo "5. Backup/Restore"
+    echo "6. Logs"
     echo "0. Exit"
     echo ""
 }
@@ -46,10 +50,12 @@ main() {
         read -rp "Select option: " choice
 
         case "${choice}" in
-            1) manage_essential ;;
-            2) manage_panel ;;
-            3) manage_openvpn ;;
-            4) manage_warp ;;
+            1) manage_panel ;;
+            2) manage_openvpn ;;
+            3) manage_warp ;;
+            4) manage_essential ;;
+            5) manage_backup ;;
+            6) manage_logs ;;
             0) 
                 echo -e "\n[ ${GREEN}✔${NC} ] Exiting toolkit. Session terminated cleanly.\n"
                 tput cnorm

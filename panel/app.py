@@ -34,6 +34,8 @@ init_db()
 # --- Utility Functions ---
 def get_traffic():
     live_traffic = {}; live_rx = 0; live_tx = 0
+    if not os.path.exists(LOG_PATH):
+        return live_traffic, live_rx, live_tx
     try:
         with open(LOG_PATH, "r") as f:
             for line in f.readlines():
@@ -45,7 +47,7 @@ def get_traffic():
                         live_traffic[user] = {"rx": rx, "tx": tx}
                         live_rx += rx; live_tx += tx
                     except ValueError: pass
-    except Exception: pass
+    except (FileNotFoundError, PermissionError): pass
     return live_traffic, live_rx, live_tx
 
 def format_bytes(b):
@@ -221,7 +223,7 @@ def openvpn_dashboard():
             with open("/etc/openvpn/server/auth/users.db", "w") as f:
                 for u in conn.execute('SELECT system_name, password, exp_days, status FROM users').fetchall():
                     f.write(f"{u['system_name']}:{u['password']}:{u['exp_days']}:{u['status']}\n")
-            os.system(f"bash {APP_DIR}/scripts/add_user.sh {sys_name} {p}")
+            subprocess.run(['bash', f'{APP_DIR}/scripts/add_user.sh', sys_name, p], check=False)
         return redirect(url_for('openvpn_dashboard'))
 
     users = conn.execute('SELECT * FROM users').fetchall()
@@ -350,8 +352,11 @@ def sys_settings():
         old_vpn_proto = curr_settings['protocol']
         
         preset = request.form['dns_preset']
-        dns1 = request.form.get('custom_dns1', '8.8.8.8') if preset == 'custom' else preset
-        dns2 = request.form.get('custom_dns2', '') if preset == 'custom' else '1.0.0.1' if dns1=='1.1.1.1' else '8.8.4.4' if dns1=='8.8.8.8' else '149.112.112.112' if dns1=='9.9.9.9' else '94.140.15.15' if dns1=='94.140.14.14' else ''
+        raw_dns1 = request.form.get('custom_dns1', '8.8.8.8') if preset == 'custom' else preset
+        raw_dns2 = request.form.get('custom_dns2', '') if preset == 'custom' else '1.0.0.1' if raw_dns1=='1.1.1.1' else '8.8.4.4' if raw_dns1=='8.8.8.8' else '149.112.112.112' if raw_dns1=='9.9.9.9' else '94.140.15.15' if raw_dns1=='94.140.14.14' else ''
+        
+        dns1 = raw_dns1.replace('\n', '').replace('\r', '').replace('"', '')
+        dns2 = raw_dns2.replace('\n', '').replace('\r', '').replace('"', '')
 
         new_limit = request.form.get('conn_limit')
         new_panel_port = int(request.form.get('panel_port'))
@@ -391,7 +396,8 @@ def sys_settings():
 
         if needs_vpn_restart: os.system("systemctl restart openvpn-server@server")
         
-        for u in conn.execute('SELECT system_name, password FROM users').fetchall(): os.system(f"bash {APP_DIR}/scripts/add_user.sh {u['system_name']} {u['password']}")
+        for u in conn.execute('SELECT system_name, password FROM users').fetchall(): 
+            subprocess.run(['bash', f'{APP_DIR}/scripts/add_user.sh', u['system_name'], u['password']], check=False)
 
         if new_panel_port != old_panel_port:
             os.system(f"ufw delete allow {old_panel_port}/tcp >/dev/null 2>&1")
