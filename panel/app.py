@@ -200,9 +200,20 @@ def dashboard():
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     conn = get_db()
     settings = conn.execute('SELECT * FROM settings').fetchone()
+    users = conn.execute('SELECT * FROM users').fetchall()
     conn.close()
-    _, t_rx, t_tx = get_traffic()
-    return render_template('dashboard.html', settings=settings, t_rx=t_rx, t_tx=t_tx)
+    
+    live_traffic, t_rx, t_tx = get_traffic()
+    user_stats = {}
+    for u in users:
+        sys = u['system_name']
+        saved_rx = int(u['rx']) if u['rx'] else 0
+        saved_tx = int(u['tx']) if u['tx'] else 0
+        active_rx = live_traffic.get(sys, {}).get('rx', 0)
+        active_tx = live_traffic.get(sys, {}).get('tx', 0)
+        user_stats[sys] = {"usage": saved_rx + saved_tx + active_rx + active_tx, "online": sys in live_traffic}
+        
+    return render_template('index.html', settings=settings, users=users, stats=user_stats, t_rx=t_rx, t_tx=t_tx, current_time=int(time.time()))
 
 # --- OpenVPN Management ---
 @app.route('/openvpn', methods=['GET', 'POST'])
@@ -224,7 +235,7 @@ def openvpn_dashboard():
                 for u in conn.execute('SELECT system_name, password, exp_days, status FROM users').fetchall():
                     f.write(f"{u['system_name']}:{u['password']}:{u['exp_days']}:{u['status']}\n")
             subprocess.run(['bash', f'{APP_DIR}/scripts/add_user.sh', sys_name, p], check=False)
-        return redirect(url_for('openvpn_dashboard'))
+        return redirect(url_for('dashboard'))
 
     users = conn.execute('SELECT * FROM users').fetchall()
     settings = conn.execute('SELECT * FROM settings').fetchone()

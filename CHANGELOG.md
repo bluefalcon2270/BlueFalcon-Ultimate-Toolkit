@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.6] - 2026-06-25
+### Added
+- **Modern Panel UI**: Completely replaced the old web interface with a modern, animated Single-Page Application (SPA) designed with Vite, Tailwind CSS, and vanilla JS.
+- **RESTful Integration**: Refactored the Flask backend (`app.py`) to inject dynamic JSON data (`window.APP_DATA`) seamlessly into the new frontend architecture.
+- **Theme Engine**: Added Light, Dark, and Auto system theme support in the new panel.
+- **Git Ignore Rules**: Added robust `.gitignore` file to ensure `Modern Panel` source and build artifacts stay out of version control.
+
+### Changed
+- Converted the Modern Panel source code from Persian RTL (`dir="rtl"`, `lang="fa"`) to fully translated English LTR.
+- Repurposed the panel's default financial metrics (Transactions/Sales) to accurately reflect VPN logic (Data Usage, Network Latency, and OpenVPN Client connection logs).
+
 ## [v2.5] - 2026-06-25
 ### Added
 - **Hybrid Log Center**: Introduced a comprehensive centralized logging system supporting 9 different log feeds.
