@@ -39,51 +39,53 @@
 
     <!-- Active Users Table -->
     <div class="material-card overflow-hidden">
-        <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h2 class="text-lg font-semibold text-gray-800">Active Configurations</h2>
-            <div class="flex gap-4 text-sm">
-                <span class="text-gray-500">Protocol: <strong class="text-gray-800 uppercase">{{ settings['protocol'] }}/{{ settings['port'] }}</strong></span>
-                <span class="text-gray-500">Limit: <strong class="text-gray-800 capitalize">{{ settings['conn_limit'] }}</strong></span>
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h2 class="text-base font-semibold text-gray-800">Active Configurations</h2>
+            <div class="flex gap-4 text-xs font-medium text-gray-500 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
+                <span>Protocol: <strong class="text-gray-800 uppercase">{{ settings['protocol'] }}</strong></span>
+                <span>Port: <strong class="text-gray-800">{{ settings['port'] }}</strong></span>
+                <span>Simultaneous Users: <strong class="text-gray-800">{% if settings['conn_limit'] == '1' %}Limited (1){% else %}Unlimited{% endif %}</strong></span>
             </div>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse text-sm">
                 <thead>
-                    <tr class="bg-white text-gray-500 text-sm border-b border-gray-100">
-                        <th class="p-6 font-medium">Client Identity</th>
-                        <th class="p-6 font-medium">Status</th>
-                        <th class="p-6 font-medium">Data Traded</th>
-                        <th class="p-6 font-medium">Access Timer</th>
-                        <th class="p-6 text-right font-medium">Actions</th>
+                    <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
+                        <th class="py-3 px-4 font-semibold w-10">#</th>
+                        <th class="py-3 px-4 font-semibold">Client Name</th>
+                        <th class="py-3 px-4 font-semibold">Client ID</th>
+                        <th class="py-3 px-4 font-semibold">Status</th>
+                        <th class="py-3 px-4 font-semibold">Traffic</th>
+                        <th class="py-3 px-4 font-semibold">Time Left</th>
+                        <th class="py-3 px-4 text-right font-semibold">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     {% for user in users %}
                     <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="p-6">
-                            <span class="font-semibold text-gray-800 block text-base">{{ user['display_name'] }}</span>
-                            <span class="text-sm text-gray-500">ID: {{ user['system_name'] }}</span>
-                        </td>
-                        <td class="p-6">
+                        <td class="py-2 px-4 text-gray-400">{{ loop.index }}</td>
+                        <td class="py-2 px-4 font-semibold text-gray-800">{{ user['display_name'] }}</td>
+                        <td class="py-2 px-4 text-gray-500 font-mono text-xs">{{ user['system_name'] }}</td>
+                        <td class="py-2 px-4">
                             {% if user['status'] == 'paused' %}
-                                <span class="bg-[#FFF8E1] text-[#F57F17] px-3 py-1 material-pill text-sm font-medium">Suspended</span>
+                                <span class="bg-[#FFF8E1] text-[#F57F17] px-2 py-0.5 rounded text-xs font-medium">Suspended</span>
                             {% elif stats[user['system_name']]['online'] %}
-                                <span class="bg-[#E6F4EA] text-[#137333] px-3 py-1 material-pill text-sm font-medium">Connected</span>
+                                <span class="bg-[#E6F4EA] text-[#137333] px-2 py-0.5 rounded text-xs font-medium flex inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#137333]"></span>Connected</span>
                             {% else %}
-                                <span class="bg-gray-100 text-gray-600 px-3 py-1 material-pill text-sm font-medium">Offline</span>
+                                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-medium">Disconnected</span>
                             {% endif %}
                         </td>
-                        <td class="p-6 text-gray-700">{{ stats[user['system_name']]['usage']|format_bytes }}</td>
-                        <td class="p-6 text-gray-700">
-                            {% if user['exp_days'] == 0 %} Unlimited 
-                            {% elif user['exp_days'] < current_time %} <span class="text-[#B3261E] font-medium">Expired</span> 
-                            {% else %} {{ ((user['exp_days'] - current_time) / 86400) | round(1) }} Days {% endif %}
+                        <td class="py-2 px-4 text-gray-700">{{ stats[user['system_name']]['usage']|format_bytes }}</td>
+                        <td class="py-2 px-4 text-gray-700">
+                            {% if user['exp_days'] == 0 %} <span class="text-xs font-medium text-gray-500">Unlimited</span>
+                            {% elif user['exp_days'] < current_time %} <span class="text-[#B3261E] text-xs font-medium">Expired</span> 
+                            {% else %} <span class="text-xs font-medium">{{ ((user['exp_days'] - current_time) / 86400) | round(1) }} Days</span> {% endif %}
                         </td>
-                        <td class="p-6 text-right space-x-2 whitespace-nowrap">
-                            <a href="/toggle/{{ user['system_name'] }}" class="text-[#0B57D0] hover:bg-[#E8F0FE] px-3 py-2 material-pill font-medium transition">{% if user['status'] == 'paused' %}Resume{% else %}Suspend{% endif %}</a>
-                            <a href="/download/{{ user['system_name'] }}" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 material-pill font-medium transition">Auto</a>
-                            <a href="/download_manual/{{ user['system_name'] }}" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 material-pill font-medium transition">Manual</a>
-                            <a href="/revoke/{{ user['system_name'] }}" onclick="return confirm('Permanently delete user?')" class="text-[#B3261E] hover:bg-[#FCE8E6] px-3 py-2 material-pill font-medium transition">Revoke</a>
+                        <td class="py-2 px-4 text-right space-x-1 whitespace-nowrap">
+                            <a href="/toggle/{{ user['system_name'] }}" class="text-[#0B57D0] hover:bg-[#E8F0FE] px-2.5 py-1.5 rounded-lg text-xs font-medium transition border border-transparent hover:border-[#A8C7FA]">{% if user['status'] == 'paused' %}Start{% else %}Pause{% endif %}</a>
+                            <a href="/download/{{ user['system_name'] }}" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">Auto</a>
+                            <a href="/download_manual/{{ user['system_name'] }}" class="bg-gray-100 hover:bg-gray-200 text-gray-800 px-2.5 py-1.5 rounded-lg text-xs font-medium transition">Manual</a>
+                            <a href="/revoke/{{ user['system_name'] }}" onclick="return confirm('Permanently delete user?')" class="text-[#B3261E] hover:bg-[#FCE8E6] px-2.5 py-1.5 rounded-lg text-xs font-medium transition">Remove</a>
                         </td>
                     </tr>
                     {% endfor %}

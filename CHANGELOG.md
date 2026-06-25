@@ -1,6 +1,11 @@
-VERSION="2.6"
+VERSION="2.7"
 
 # Changelog
+
+## [v2.7] - 2026-06-27
+### Added
+- **UI Overhaul**: Complete UI overhaul for WARP, OpenVPN, and Preferences tabs.
+- **Server Configuration**: Added Server Name configuration in Preferences.
 
 ## [v2.6] - 2026-06-26
 ### Added

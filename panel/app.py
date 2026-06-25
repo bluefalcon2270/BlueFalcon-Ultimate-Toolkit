@@ -346,8 +346,9 @@ def preferences():
         new_vpn_port = int(request.form.get('vpn_port'))
         new_vpn_proto = request.form.get('vpn_protocol')
         new_public_ip = request.form.get('public_ip', curr_settings['public_ip'])
+        new_server_name = request.form.get('server_name', curr_settings['server_name'])
         
-        conn.execute('UPDATE settings SET dns=?, dns2=?, conn_limit=?, panel_port=?, port=?, protocol=?, public_ip=?', (dns1, dns2, new_limit, new_panel_port, new_vpn_port, new_vpn_proto, new_public_ip))
+        conn.execute('UPDATE settings SET dns=?, dns2=?, conn_limit=?, panel_port=?, port=?, protocol=?, public_ip=?, server_name=?', (dns1, dns2, new_limit, new_panel_port, new_vpn_port, new_vpn_proto, new_public_ip, new_server_name))
         if request.form.get('admin_user') and request.form.get('admin_pass'):
             conn.execute('DELETE FROM admin')
             conn.execute('INSERT INTO admin (username, password) VALUES (?, ?)', (request.form['admin_user'], request.form['admin_pass']))
