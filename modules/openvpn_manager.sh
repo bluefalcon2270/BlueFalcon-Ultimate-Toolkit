@@ -146,7 +146,6 @@ manage_openvpn() {
         echo "2. Revoke/Delete User"
         echo "3. Pause/Resume User"
         echo "4. List All Users"
-        echo "5. View OpenVPN Core Logs"
         echo "0. Return"
         echo ""
         
@@ -156,13 +155,6 @@ manage_openvpn() {
             2) ovpn_revoke_user ;;
             3) ovpn_toggle_user ;;
             4) ovpn_list_users ;;
-            5) 
-                clear
-                echo -e "${BOLD_BLUE}--- OpenVPN Core Logs ---${NC}\nStreaming real-time service logs. Press Ctrl+C to exit.\n"
-                trap 'true' SIGINT
-                journalctl -u openvpn-server@server -f -n 50
-                trap cleanup SIGINT SIGTERM
-                ;;
             0) break ;;
             *) echo -e "\n[ ${RED}✖${NC} ] Invalid input." ; sleep 1.5 ;;
         esac

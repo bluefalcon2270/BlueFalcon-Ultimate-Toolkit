@@ -215,7 +215,6 @@ manage_warp() {
         echo "2. Install WARP+ (Key)"
         echo "3. Toggle WARP On/Off"
         echo "4. Uninstall WARP"
-        echo "5. View WARP Logs"
         echo "0. Return"
         echo ""
         
@@ -250,16 +249,6 @@ manage_warp() {
                 fi ;;
             3) toggle_warp_service ;;
             4) uninstall_warp ;;
-            5) 
-                clear
-                echo -e "${BOLD_BLUE}-----------------------------------------------------${NC}"
-                echo -e "${BOLD_BLUE}                    WARP Debug Logs                  ${NC}"
-                echo -e "${BOLD_BLUE}-----------------------------------------------------${NC}"
-                echo -e "Streaming last 50 lines. Press Ctrl+C to exit.\n"
-                trap 'true' SIGINT
-                tail -n 50 -f "${WARP_LOG}"
-                trap cleanup SIGINT SIGTERM
-                ;;
             0) break ;;
             *) echo -e "\n[ ${RED}✖${NC} ] Invalid input." ; sleep 1.5 ;;
         esac

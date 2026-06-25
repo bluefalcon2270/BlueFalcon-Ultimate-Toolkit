@@ -109,7 +109,6 @@ manage_panel() {
         echo "1. Install Web Panel"
         echo "2. Uninstall Web Panel"
         echo "3. View Installation Logs"
-        echo "4. View Web Panel Logs"
         echo "0. Return"
         echo ""
         
@@ -122,13 +121,6 @@ manage_panel() {
                 echo -e "${BOLD_BLUE}--- Installation Logs ---${NC}\nStreaming last 50 lines. Press Ctrl+C to exit.\n"
                 trap 'true' SIGINT
                 tail -n 50 -f "${LOG_FILE}"
-                trap cleanup SIGINT SIGTERM
-                ;;
-            4) 
-                clear
-                echo -e "${BOLD_BLUE}--- Web Panel Logs ---${NC}\nStreaming real-time service logs. Press Ctrl+C to exit.\n"
-                trap 'true' SIGINT
-                journalctl -u bluefalcon-panel -f -n 50
                 trap cleanup SIGINT SIGTERM
                 ;;
             0) break ;;
