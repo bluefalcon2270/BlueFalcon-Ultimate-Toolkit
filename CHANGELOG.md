@@ -1,6 +1,12 @@
-VERSION="3.5"
+VERSION="3.6"
 
 # Changelog
+
+## [v3.6] - 2026-06-28
+### Added
+- **WireGuard Protocol**: Added full support for WireGuard.
+  - **CLI Menu**: Manage WireGuard installation, port selection, and users via `bfp`.
+  - **Web Panel**: A new dedicated WireGuard tab featuring installation streams, custom port selection, user management, `.conf` downloads, and live QR code generation for mobile devices.
 
 ## [v3.5] - 2026-06-28
 ### Fixed

@@ -65,6 +65,7 @@ def init_db():
         pass 
 
     conn.execute('CREATE TABLE IF NOT EXISTS users (display_name TEXT, system_name TEXT, password TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
+    conn.execute('CREATE TABLE IF NOT EXISTS wg_users (display_name TEXT, system_name TEXT, pub_key TEXT, ip_address TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
     conn.execute('CREATE TABLE IF NOT EXISTS warp (is_installed INTEGER DEFAULT 0)')
     conn.commit()
     conn.close()
@@ -154,8 +155,9 @@ def wizard():
         
         conn.execute('DELETE FROM settings')
         conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)', 
-                    (server_name, selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, public_ip))
-        
+                    ('openvpn', selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, public_ip))
+        conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)', 
+                    ('wireguard', 'udp', 51820, dns1, dns2, conn_limit, panel_port, public_ip))
         conn.execute('DELETE FROM warp')
         warp_status = -1 if install_warp else 0 
         conn.execute('INSERT INTO warp (is_installed) VALUES (?)', (warp_status,))
@@ -227,8 +229,8 @@ def login():
         if admin:
             session['admin_logged_in'] = True
             return redirect(url_for('dashboard'))
-        return render_template('login.html', error="Invalid Credentials")
-    return render_template('login.html')
+            
+    return render_template('login.html', error="Invalid Credentials")
 
 @app.route('/logout')
 def logout():
@@ -282,6 +284,91 @@ def openvpn_dashboard():
         user_stats[sys] = {"usage": saved_rx + saved_tx + active_rx + active_tx, "online": sys in live_traffic}
 
     return render_template('openvpn.html', users=users, settings=settings, stats=user_stats, current_time=int(time.time()))
+
+# --- WIREGUARD ROUTES ---
+def run_wg_task(action, port):
+    log_file = '/tmp/system_task.log'
+    with open(log_file, 'w') as f:
+        if action == 'install':
+            process = subprocess.Popen(
+                ['bash', f'{APP_DIR}/vpn-scripts/wireguard/core_setup.sh', str(port)],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            )
+            for line in iter(process.stdout.readline, ''):
+                f.write(ansi_to_html(line))
+                f.flush()
+            process.wait()
+            f.write(f"\n[DONE]\n")
+
+@app.route('/wireguard')
+def wireguard():
+    if 'admin_logged_in' not in session: return redirect(url_for('login'))
+    
+    conn = get_db_connection()
+    is_installed = conn.execute("SELECT is_installed FROM settings WHERE server_name='wireguard'").fetchone()[0] == 1
+    wg_port = conn.execute("SELECT port FROM settings WHERE server_name='wireguard'").fetchone()[0]
+    
+    users_data = []
+    if is_installed:
+        users = conn.execute('SELECT * FROM wg_users').fetchall()
+        for u in users:
+            users_data.append(dict(u))
+    conn.close()
+    
+    return render_template('wireguard.html', is_installed=is_installed, wg_port=wg_port, users=users_data)
+
+@app.route('/api/wireguard_stream')
+def wireguard_stream():
+    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
+    action = request.args.get('action')
+    port = request.args.get('port', 51820)
+    threading.Thread(target=run_wg_task, args=(action, port), daemon=True).start()
+    return jsonify({"status": "started"})
+
+@app.route('/api/add_wg_user', methods=['POST'])
+def add_wg_user():
+    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
+    name = request.form.get('name', '').strip()
+    exp = request.form.get('exp', '30')
+    if not name or not name.isalnum():
+        return jsonify({"status": "error", "message": "Invalid client name. Use alphanumeric characters only."})
+    
+    conn = get_db_connection()
+    exists = conn.execute("SELECT 1 FROM wg_users WHERE system_name=?", (name,)).fetchone()
+    conn.close()
+    if exists:
+        return jsonify({"status": "error", "message": "Client name already exists."})
+        
+    process = subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/wireguard/add_user.sh', name, str(exp)], capture_output=True, text=True)
+    if process.returncode == 0:
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": process.stderr})
+
+@app.route('/api/del_wg_user', methods=['POST'])
+def del_wg_user():
+    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
+    name = request.form.get('name')
+    if name:
+        subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/wireguard/del_user.sh', name], check=False)
+    return jsonify({"status": "success"})
+
+@app.route('/api/download_wg_conf/<username>')
+def download_wg_conf(username):
+    if 'admin_logged_in' not in session: return redirect(url_for('login'))
+    conf_path = f"/etc/wireguard/clients/{username}.conf"
+    if os.path.exists(conf_path):
+        return send_file(conf_path, as_attachment=True)
+    return "Config file not found.", 404
+
+@app.route('/api/get_wg_qr/<username>')
+def get_wg_qr(username):
+    if 'admin_logged_in' not in session: return "Unauthorized", 401
+    conf_path = f"/etc/wireguard/clients/{username}.conf"
+    if os.path.exists(conf_path):
+        process = subprocess.run(['qrencode', '-t', 'SVG', '-r', conf_path], capture_output=True, text=True)
+        if process.returncode == 0:
+            return process.stdout, 200, {'Content-Type': 'image/svg+xml'}
+    return "QR Code generation failed.", 404
 
 # --- WARP Routing ---
 def get_warp_trace():
