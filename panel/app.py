@@ -143,23 +143,32 @@ def wizard():
         conn_limit = request.form.get('conn_limit', 'unlimited')
 
         install_warp = request.form.get('install_warp') == 'on'
+        install_openvpn = request.form.get('install_openvpn') == 'on'
+        install_wireguard = request.form.get('install_wireguard') == 'on'
+        wg_port = int(request.form.get('wg_port', 51820))
         warp_target = request.form.get('warp_target', '3')
         warp_license = request.form.get('warp_license', 'free')
 
-        os.system(f"ufw allow {selected_port}/{selected_protocol} >/dev/null 2>&1")
-        os.system(f"iptables -I INPUT -p {selected_protocol} --dport {selected_port} -j ACCEPT")
-        os.system("netfilter-persistent save > /dev/null 2>&1")
+        if install_openvpn:
+            os.system(f"ufw allow {selected_port}/{selected_protocol} >/dev/null 2>&1")
+            os.system(f"iptables -I INPUT -p {selected_protocol} --dport {selected_port} -j ACCEPT")
+            os.system("netfilter-persistent save > /dev/null 2>&1")
 
         conn.execute('DELETE FROM admin')
         conn.execute('INSERT INTO admin (username, password) VALUES (?, ?)', (admin_user, admin_pass))
         
         conn.execute('DELETE FROM settings')
-        conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)', 
-                    ('openvpn', selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, public_ip))
-        conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)', 
-                    ('wireguard', 'udp', 51820, dns1, dns2, conn_limit, panel_port, public_ip))
-        conn.execute('DELETE FROM warp')
+        
+        ovpn_status = -1 if install_openvpn else 0
+        wg_status = -1 if install_wireguard else 0
         warp_status = -1 if install_warp else 0 
+        
+        conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('openvpn', selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, ovpn_status, public_ip))
+        conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('wireguard', 'udp', wg_port, dns1, dns2, conn_limit, panel_port, wg_status, public_ip))
+        
+        conn.execute('DELETE FROM warp')
         conn.execute('INSERT INTO warp (is_installed) VALUES (?)', (warp_status,))
         conn.commit(); conn.close()
         
@@ -180,6 +189,8 @@ def install_execute():
     def generate():
         conn = get_db()
         warp_pending = conn.execute('SELECT is_installed FROM warp').fetchone()[0] == -1
+        ovpn_pending = conn.execute("SELECT is_installed FROM settings WHERE server_name='openvpn'").fetchone()[0] == -1
+        wg_pending = conn.execute("SELECT is_installed FROM settings WHERE server_name='wireguard'").fetchone()[0] == -1
         conn.close()
 
         yield "data: 🦅 INITIALIZING BLUEFALCON DEPLOYMENT SEQUENCE\n\n"
@@ -188,11 +199,31 @@ def install_execute():
         fix_cmd = "sed -i -E \"s/curl.*ifconfig\\.me|curl.*api\\.ipify\\.org/curl --interface \\$(ip route | awk '\\/default\\/ {print \\$5}' | head -1) -s4 ifconfig.me/g\" /opt/bluefalcon-ultimate-toolkit/panel/scripts/*.sh 2>/dev/null"
         os.system(fix_cmd)
         
-        yield "data: \n\n"
-        yield "data: [OPENVPN] Starting Core Configuration...\n\n"
-        process = subprocess.Popen(['bash', f'{APP_DIR}/scripts/core_setup.sh'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in iter(process.stdout.readline, ''): yield f"data: {line}\n\n"
-        process.stdout.close(); process.wait()
+        if ovpn_pending:
+            yield "data: \n\n"
+            yield "data: [OPENVPN] Starting Core Configuration...\n\n"
+            process = subprocess.Popen(['bash', f'{APP_DIR}/scripts/core_setup.sh'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in iter(process.stdout.readline, ''): yield f"data: {line}\n\n"
+            process.stdout.close(); process.wait()
+            
+            conn = get_db()
+            conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='openvpn'")
+            conn.commit(); conn.close()
+            
+        if wg_pending:
+            yield "data: \n\n"
+            yield "data: [WIREGUARD] Starting Core Configuration...\n\n"
+            conn = get_db()
+            wg_port = conn.execute("SELECT port FROM settings WHERE server_name='wireguard'").fetchone()[0]
+            conn.close()
+            
+            process = subprocess.Popen(['bash', f'{APP_DIR}/vpn-scripts/wireguard/core_setup.sh', str(wg_port)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in iter(process.stdout.readline, ''): yield f"data: {line}\n\n"
+            process.stdout.close(); process.wait()
+            
+            conn = get_db()
+            conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='wireguard'")
+            conn.commit(); conn.close()
         
         if warp_pending:
             yield "data: \n\n"
@@ -209,11 +240,7 @@ def install_execute():
             conn = get_db()
             conn.execute('UPDATE warp SET is_installed=1')
             conn.commit(); conn.close()
-
-        conn = get_db()
-        conn.execute('UPDATE settings SET is_installed=1')
-        conn.commit(); conn.close()
-        
+            
         yield "data: \n\n"
         yield "data: 🟢 DEPLOYMENT COMPLETE. REDIRECTING...\n\n"
         yield "data: [DONE]\n\n"
@@ -269,7 +296,7 @@ def openvpn_dashboard():
         return redirect(url_for('openvpn_dashboard'))
 
     users = conn.execute('SELECT * FROM users').fetchall()
-    settings = conn.execute('SELECT * FROM settings').fetchone()
+    settings = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
     conn.close()
     
     live_traffic, _, _ = get_traffic()
@@ -284,6 +311,45 @@ def openvpn_dashboard():
         user_stats[sys] = {"usage": saved_rx + saved_tx + active_rx + active_tx, "online": sys in live_traffic}
 
     return render_template('openvpn.html', users=users, settings=settings, stats=user_stats, current_time=int(time.time()))
+
+def run_ovpn_task(protocol, port, dns1, dns2):
+    log_file = '/tmp/system_task.log'
+    
+    # Save the parameters for core_setup.sh which reads from args or environment
+    # Actually, core_setup.sh takes parameters or reads defaults. 
+    # The original core_setup.sh relies on settings db for port/protocol/dns.
+    # We must update the DB first, then run core_setup.sh
+    with open(log_file, 'w') as f:
+        process = subprocess.Popen(
+            ['bash', f'{APP_DIR}/scripts/core_setup.sh'],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
+        for line in iter(process.stdout.readline, ''):
+            f.write(ansi_to_html(line))
+            f.flush()
+        process.wait()
+        f.write(f"\n[DONE]\n")
+
+@app.route('/api/openvpn_stream', methods=['POST'])
+def openvpn_stream():
+    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
+    protocol = request.form.get('protocol', 'udp')
+    port = int(request.form.get('port', 1194))
+    preset = request.form.get('dns_preset', '1.1.1.1')
+    dns1 = '8.8.8.8' if preset == '8.8.8.8' else '1.1.1.1'
+    dns2 = '8.8.4.4' if preset == '8.8.8.8' else '1.0.0.1'
+    
+    conn = get_db_connection()
+    conn.execute("UPDATE settings SET protocol=?, port=?, dns=?, dns2=?, is_installed=1 WHERE server_name='openvpn'", 
+                 (protocol, port, dns1, dns2))
+    conn.commit(); conn.close()
+    
+    os.system(f"ufw allow {port}/{protocol} >/dev/null 2>&1")
+    os.system(f"iptables -I INPUT -p {protocol} --dport {port} -j ACCEPT")
+    os.system("netfilter-persistent save > /dev/null 2>&1")
+    
+    threading.Thread(target=run_ovpn_task, args=(protocol, port, dns1, dns2), daemon=True).start()
+    return jsonify({"status": "started"})
 
 # --- WIREGUARD ROUTES ---
 def run_wg_task(action, port):

@@ -1,6 +1,11 @@
-VERSION="3.6"
+VERSION="3.7"
 
 # Changelog
+
+## [v3.7] - 2026-06-28
+### Added
+- **Wizard Redesign**: The deployment wizard has been completely redesigned. It now features sleek collapsible boxes for OpenVPN, WireGuard, and WARP, with modern toggle switches (defaulting to OFF).
+- **Modular OpenVPN**: OpenVPN is no longer forced to install during the initial setup wizard. It can be skipped and installed later directly from the Web Panel, matching the behavior of WireGuard and WARP.
 
 ## [v3.6] - 2026-06-28
 ### Added
