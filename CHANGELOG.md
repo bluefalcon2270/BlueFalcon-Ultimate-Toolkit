@@ -1,6 +1,13 @@
-VERSION="3.7"
+VERSION="3.8"
 
 # Changelog
+
+## [v3.8] - 2026-06-28
+### Fixed
+- **WireGuard Panel (Critical)**: Fixed `Internal Server Error` caused by calling `get_db_connection()` which doesn't exist — all calls now correctly use `get_db()`.
+- **OpenVPN Install (Critical)**: Same undefined function fix for the `/api/openvpn_stream` and `/api/add_wg_user` routes.
+- **OpenVPN & WireGuard "Not Installed" UI**: Completely redesigned to match the WARP page — full-width card with persistent, large terminal always visible on screen. Terminal shows live log as soon as you click Install.
+- **Auto-resume polling**: If you navigate away and come back while an install is running, the terminal will automatically resume showing the live log.
 
 ## [v3.7] - 2026-06-28
 ### Added

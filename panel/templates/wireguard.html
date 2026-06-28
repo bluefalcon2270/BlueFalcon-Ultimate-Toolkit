@@ -3,40 +3,37 @@
 {% block header_title %}WireGuard Protocol{% endblock %}
 
 {% block content %}
-<!-- WireGuard is NOT installed -->
 {% if not is_installed %}
-<div class="max-w-md mx-auto material-card p-10 flex flex-col items-center text-center mt-12">
-    <div class="w-20 h-20 rounded-full bg-[#1A1A1C] border border-[#2C2C2E] flex items-center justify-center mb-6 shadow-inner">
-        <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
-    </div>
-    <h2 class="text-xl font-bold text-white mb-3">WireGuard Not Installed</h2>
-    <p class="text-sm text-gray-400 mb-8 leading-relaxed">Install WireGuard to create a blazing fast, modern VPN tunnel.</p>
-    
-    <div id="wgControls" class="w-full">
-        <form onsubmit="startWgStream(event, 'install')" class="flex flex-col gap-4">
-            <div class="text-left">
-                <label class="block text-xs font-semibold text-gray-500 mb-2">Listening Port</label>
-                <input type="number" name="wg_port" value="51820" class="input-field w-full px-4 py-3 rounded-xl font-mono text-sm" required>
-            </div>
-            <button type="submit" class="w-full bg-[#1E3A5F] hover:bg-[#0B57D0] text-[#A8C7FA] hover:text-white px-6 py-3 rounded-xl font-bold text-sm transition-all border border-[#2A4A7F]">
-                Install WireGuard
-            </button>
-        </form>
-    </div>
-
-    <div id="wgTerminalContainer" class="mt-6 w-full hidden">
-        <div class="mb-2 flex items-center justify-between">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <span id="wgSpinner" class="hidden"><svg class="animate-spin h-4 w-4 text-[#34A853]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></span>
-                Installation Log
-            </h3>
-            <div class="flex items-center gap-2">
-                <span class="text-xs text-gray-500">Auto-scroll</span>
-                <button id="wgScrollToggle" class="scroll-toggle on" type="button" onclick="toggleWgScroll(this)"><span class="thumb"></span></button>
-            </div>
+<div class="max-w-5xl space-y-6">
+    <div class="material-card p-6 border border-[#2C2C2E]">
+        <div id="wgControls">
+            <form id="wgInstallForm" onsubmit="startWgStream(event, 'install');" class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-1 w-full">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Listening Port</label>
+                    <input type="number" name="wg_port" value="{{ wg_port }}" class="w-full px-4 py-2.5 bg-[#1F1F22] border border-[#2C2C2E] rounded-xl focus:border-[#A8C7FA] focus:ring-1 focus:ring-[#A8C7FA] outline-none text-sm text-gray-200 font-mono transition-all" required>
+                </div>
+                <button type="submit" class="bg-[#0B57D0] hover:bg-[#0842A0] text-white font-bold px-8 py-2.5 rounded-xl transition shadow-sm text-sm h-[42px] whitespace-nowrap">Install WireGuard</button>
+            </form>
         </div>
-        <div class="bg-[#0F0F11] rounded-xl border border-[#2C2C2E] shadow-inner text-left">
-            <pre id="wgLogOutput" class="term-scroll p-4 text-[#A8C7FA] font-mono text-xs h-64 whitespace-pre-wrap leading-relaxed"></pre>
+
+        <!-- Persistent Terminal -->
+        <div id="wgTerminalContainer" class="mt-6">
+            <div class="mb-2 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span id="wgSpinner" class="hidden">
+                        <svg class="animate-spin h-4 w-4 text-[#34A853]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </span>
+                    <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M4 17h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    WireGuard Terminal
+                </h3>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Auto-scroll</span>
+                    <button id="wgScrollToggle" class="scroll-toggle on" type="button" onclick="toggleWgScroll(this)"><span class="thumb"></span></button>
+                </div>
+            </div>
+            <div class="bg-[#0F0F11] rounded-xl overflow-hidden border border-[#2C2C2E] shadow-inner">
+                <pre id="wgLogOutput" class="term-scroll p-4 text-[#A8C7FA] font-mono text-sm h-96 whitespace-pre-wrap leading-relaxed">BlueFalcon OS &gt; WireGuard not installed. Configure port above and click Install.</pre>
+            </div>
         </div>
     </div>
 </div>
@@ -71,7 +68,7 @@
                     <p class="text-xs text-gray-500 mt-1">Status: <span class="text-[#34A853] font-bold">Active</span> &nbsp;|&nbsp; Port: <span class="text-[#A8C7FA] font-mono">{{ wg_port }}</span></p>
                 </div>
                 <div class="w-12 h-12 rounded-full bg-[#1A1A1C] border border-[#2C2C2E] flex items-center justify-center">
-                    <svg class="w-6 h-6 text-[#A8C7FA]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+                    <svg class="w-6 h-6 text-[#A8C7FA]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -156,15 +153,14 @@
 
     function startWgStream(event, action) {
         event.preventDefault();
-        const port = document.querySelector('input[name="wg_port"]').value;
+        const portInput = document.querySelector('input[name="wg_port"]');
+        const port = portInput ? portInput.value : '51820';
         const url = `/api/wireguard_stream?action=${action}&port=${port}`;
-        
-        document.getElementById('wgControls').classList.add('hidden');
-        document.getElementById('wgTerminalContainer').classList.remove('hidden');
+
         document.getElementById('wgSpinner').classList.remove('hidden');
-        
         const logWindow = document.getElementById('wgLogOutput');
-        
+        logWindow.innerHTML = '';
+
         fetch(url).then(() => {
             if (wgPoll) clearInterval(wgPoll);
             wgPoll = setInterval(() => {
@@ -185,17 +181,36 @@
         });
     }
 
+    // Auto-resume if installing on page load
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch('/api/system_log')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'running') {
+                    document.getElementById('wgSpinner').classList.remove('hidden');
+                    document.getElementById('wgLogOutput').innerHTML = data.log || '';
+                    if (wgPoll) clearInterval(wgPoll);
+                    wgPoll = setInterval(() => {
+                        fetch('/api/system_log').then(r => r.json()).then(d => {
+                            if (d.log) { document.getElementById('wgLogOutput').innerHTML = d.log; if (wgAutoScroll) document.getElementById('wgLogOutput').scrollTop = 99999; }
+                            if (d.status === 'done') { clearInterval(wgPoll); document.getElementById('wgSpinner').classList.add('hidden'); setTimeout(() => window.location.reload(), 1500); }
+                        });
+                    }, 1000);
+                }
+            });
+    });
+
     {% if is_installed %}
     document.getElementById('addWgUserForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('addWgBtn');
         btn.disabled = true;
         btn.textContent = 'Creating...';
-        
+
         const fd = new FormData();
         fd.append('name', document.getElementById('wgClientName').value);
         fd.append('exp', document.getElementById('wgClientExp').value);
-        
+
         fetch('/api/add_wg_user', { method: 'POST', body: fd })
             .then(r => r.json())
             .then(data => {
@@ -216,27 +231,23 @@
         const content = document.getElementById('qrModalContent');
         const imgContainer = document.getElementById('qrImage');
         const title = document.getElementById('qrTitle');
-        
+
         title.textContent = name + ' QR Code';
         imgContainer.innerHTML = '<svg class="animate-spin h-8 w-8 text-[#A8C7FA]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-        
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         setTimeout(() => {
             content.classList.remove('scale-95', 'opacity-0');
             content.classList.add('scale-100', 'opacity-100');
         }, 10);
-        
+
         fetch('/api/get_wg_qr/' + name)
             .then(r => r.text())
             .then(svg => {
                 imgContainer.innerHTML = svg;
-                // qrencode outputs an SVG with hardcoded width/height. We override it to fill the box.
                 const svgEl = imgContainer.querySelector('svg');
-                if (svgEl) {
-                    svgEl.style.width = '100%';
-                    svgEl.style.height = '100%';
-                }
+                if (svgEl) { svgEl.style.width = '100%'; svgEl.style.height = '100%'; }
             });
     }
 

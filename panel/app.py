@@ -355,7 +355,7 @@ def openvpn_stream():
     dns1 = '8.8.8.8' if preset == '8.8.8.8' else '1.1.1.1'
     dns2 = '8.8.4.4' if preset == '8.8.8.8' else '1.0.0.1'
     
-    conn = get_db_connection()
+    conn = get_db()
     conn.execute("UPDATE settings SET protocol=?, port=?, dns=?, dns2=?, is_installed=1 WHERE server_name='openvpn'", 
                  (protocol, port, dns1, dns2))
     conn.commit(); conn.close()
@@ -386,7 +386,7 @@ def run_wg_task(action, port):
 def wireguard():
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     
-    conn = get_db_connection()
+    conn = get_db()
     is_installed_row = conn.execute("SELECT is_installed FROM settings WHERE server_name='wireguard'").fetchone()
     is_installed = is_installed_row[0] == 1 if is_installed_row else False
     
@@ -418,7 +418,7 @@ def add_wg_user():
     if not name or not name.isalnum():
         return jsonify({"status": "error", "message": "Invalid client name. Use alphanumeric characters only."})
     
-    conn = get_db_connection()
+    conn = get_db()
     exists = conn.execute("SELECT 1 FROM wg_users WHERE system_name=?", (name,)).fetchone()
     conn.close()
     if exists:
