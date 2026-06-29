@@ -1,6 +1,11 @@
-VERSION="3.9"
+VERSION="3.9.1"
 
 # Changelog
+
+## [v3.9.1] - 2026-06-29
+### Fixed
+- **Panel Access Blocked via UFW**: Fixed an issue where installing OpenVPN or WARP would reload UFW and accidentally block the Web Panel port (2020).
+- **Wizard Redirect Loop**: Fixed a bug where restarting the server with only one protocol installed would mistakenly trigger the Setup Wizard due to a flawed database check.
 
 ## [v3.9] - 2026-06-29
 ### Fixed

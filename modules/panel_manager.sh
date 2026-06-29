@@ -29,7 +29,7 @@ install_panel() {
         CURRENT_LOG="${LOG_FILE}" run_with_spinner "Creating Swapfile" bash -c "fallocate -l 1G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab"
     fi
 
-    CURRENT_LOG="${LOG_FILE}" run_with_spinner "Securing Web Panel Port" bash -c "iptables -I INPUT -p tcp --dport 2020 -j ACCEPT && netfilter-persistent save"
+    CURRENT_LOG="${LOG_FILE}" run_with_spinner "Securing Web Panel Port" bash -c "ufw allow 2020/tcp >/dev/null 2>&1 || true; iptables -I INPUT -p tcp --dport 2020 -j ACCEPT && netfilter-persistent save"
 
     cat > /etc/cron.daily/bluefalcon-panel-expiry << EOF
 #!/bin/bash

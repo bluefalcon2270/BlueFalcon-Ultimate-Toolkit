@@ -139,7 +139,7 @@ def sysinfo():
 def index():
     admin = get_db().execute('SELECT * FROM admin').fetchone()
     settings = get_db().execute('SELECT * FROM settings').fetchone()
-    if not admin or not settings or settings['is_installed'] == 0: return redirect(url_for('wizard'))
+    if not admin or not settings: return redirect(url_for('wizard'))
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     return redirect(url_for('dashboard'))
 
