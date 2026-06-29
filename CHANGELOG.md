@@ -1,6 +1,13 @@
-VERSION="4.3"
+VERSION="4.4"
 
 # Changelog
+
+## [v4.4] - 2026-06-30
+### Fixed
+- **OpenVPN + WARP Routing Integrity**: Fixed a critical routing bug where OpenVPN failed to establish connections or drop packets when WARP was enabled.
+  - Added `multihome` directive for UDP protocols so the OpenVPN server correctly replies from the original public interface instead of the WARP virtual interface.
+  - Added `mssfix 1240` to clamp OpenVPN tunnel MTU below WARP's strict 1280 MTU, preventing MTU packet-loss blackholes.
+  - Forced loose `rp_filter` (Reverse Path filtering) in sysctl to prevent the Linux kernel from dropping cross-routed packets natively.
 
 ## [v4.3] - 2026-06-29
 ### Changed

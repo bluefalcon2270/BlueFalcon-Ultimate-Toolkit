@@ -70,7 +70,13 @@ push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS $DNS"
 EOCONF
 if [ -n "$DNS2" ] && [ "$DNS2" != "None" ] && [ "$DNS2" != "" ]; then echo "push \"dhcp-option DNS $DNS2\"" >> /etc/openvpn/server/server.conf; fi
+
+if [[ "$PROTOCOL" == *"udp"* ]]; then
+    echo "multihome" >> /etc/openvpn/server/server.conf
+fi
+
 cat >> /etc/openvpn/server/server.conf << EOCONF
+mssfix 1240
 keepalive 10 120
 cipher AES-256-GCM
 persist-key
@@ -85,7 +91,11 @@ verb 3
 EOCONF
 LIMIT=$(sqlite3 "${APP_DIR}/panel.db" "SELECT conn_limit FROM settings LIMIT 1;")
 if [ "$LIMIT" == "unlimited" ]; then echo "duplicate-cn" >> /etc/openvpn/server/server.conf; fi
-echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-openvpn.conf
+cat > /etc/sysctl.d/99-openvpn.conf << EOF
+net.ipv4.ip_forward=1
+net.ipv4.conf.all.rp_filter=2
+net.ipv4.conf.default.rp_filter=2
+EOF
 sysctl -p /etc/sysctl.d/99-openvpn.conf > /dev/null 2>&1
 
 # --- Bulletproof Firewall & NAT Routing ---
