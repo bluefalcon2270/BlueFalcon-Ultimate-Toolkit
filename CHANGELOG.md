@@ -1,11 +1,6 @@
-VERSION="3.9"
+VERSION="3.8"
 
 # Changelog
-
-## [v3.9] - 2026-06-29
-### Fixed
-- **Server Name Display (Critical)**: Fixed bug where the panel would always display "openvpn" as the server name. Added a dedicated `display_name` column so you can customize your node name in the Wizard or Preferences, while keeping the internal protocol identifiers correct.
-- **WireGuard / OpenVPN Stuck on "Not Installed"**: Fixed bug where running an install directly from the WireGuard or OpenVPN tabs wouldn't properly update the database's `is_installed` status, leaving you stuck on the "Not Installed" page even after a successful install.
 
 ## [v3.8] - 2026-06-28
 ### Fixed
