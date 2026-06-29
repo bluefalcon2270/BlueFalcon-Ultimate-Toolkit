@@ -17,25 +17,14 @@ install_warp() {
     apt-get update -y
     
     echo "[INFO] Installing core network dependencies..."
-    apt-get install -y curl gnupg lsb-release ca-certificates
+    local dns_pkg="resolvconf"
+    if apt-get install -s openresolv >/dev/null 2>&1; then dns_pkg="openresolv"; fi
+    apt-get install -y curl gnupg lsb-release ca-certificates iproute2 wireguard-tools "${dns_pkg}"
     
     if ! command -v wgcf >/dev/null 2>&1; then
         echo "[INFO] Downloading WGCF binary..."
         curl -fsSL git.io/wgcf.sh -o /tmp/wgcf.sh
         bash /tmp/wgcf.sh
-    fi
-    
-    if ! command -v warp-cli >/dev/null 2>&1; then
-        echo "[INFO] Fetching Cloudflare Repository keys..."
-        . /etc/os-release
-        curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/cloudflare-client.list >/dev/null
-        
-        echo "[INFO] Installing Cloudflare client & WireGuard..."
-        apt-get update -y
-        local dns_pkg="resolvconf"
-        if apt-get install -s openresolv >/dev/null 2>&1; then dns_pkg="openresolv"; fi
-        apt-get install cloudflare-warp iproute2 "${dns_pkg}" wireguard-tools -y
     fi
 
     mkdir -p /etc/warp
@@ -96,7 +85,7 @@ Endpoint = engage.cloudflareclient.com:2408
 EOF
 
     echo "[INFO] Securing routes and enabling Background Service..."
-    (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf;systemctl restart warp-svc") | crontab -
+    (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf") | crontab -
     systemctl enable --now wg-quick@wgcf
 }
 

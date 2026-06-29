@@ -43,7 +43,7 @@ run_with_spinner() {
     local msg="$1"
     shift
     local log_tgt="${CURRENT_LOG:-$LOG_FILE}"
-    "$@" >> "$log_tgt" 2>&1 &
+    "$@" > "$log_tgt" 2>&1 < /dev/null &
     local pid=$!
     local delay=0.1
     local frames=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")

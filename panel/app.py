@@ -288,9 +288,17 @@ def dashboard():
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     conn = get_db()
     settings = conn.execute('SELECT * FROM settings').fetchone()
+    ovpn_row = conn.execute("SELECT is_installed FROM settings WHERE server_name='openvpn'").fetchone()
+    wg_row = conn.execute("SELECT is_installed FROM settings WHERE server_name='wireguard'").fetchone()
+    warp_row = conn.execute('SELECT is_installed FROM warp').fetchone()
     conn.close()
+    
+    ovpn_installed = ovpn_row[0] == 1 if ovpn_row else False
+    wg_installed = wg_row[0] == 1 if wg_row else False
+    warp_installed = warp_row[0] == 1 if warp_row else False
+    
     _, t_rx, t_tx = get_traffic()
-    return render_template('dashboard.html', settings=settings, t_rx=t_rx, t_tx=t_tx)
+    return render_template('dashboard.html', settings=settings, t_rx=t_rx, t_tx=t_tx, ovpn_installed=ovpn_installed, wg_installed=wg_installed, warp_installed=warp_installed)
 
 # --- OpenVPN Management ---
 @app.route('/openvpn', methods=['GET', 'POST'])
@@ -869,7 +877,7 @@ def preferences():
             elif log_type == 'panel': logs = os.popen("journalctl -u bluefalcon-panel -n 100 --no-pager").read()
             elif log_type == 'openvpn': logs = os.popen("journalctl -u openvpn-server@server -n 100 --no-pager").read()
             elif log_type == 'warp': logs = os.popen("journalctl -u wg-quick@wgcf -n 100 --no-pager").read()
-            elif log_type == 'auth': logs = os.popen("tail -n 100 /var/log/auth.log 2>/dev/null").read()
+            elif log_type == 'auth': logs = os.popen("journalctl -u ssh.service -n 100 --no-pager 2>/dev/null").read()
             elif log_type == 'ufw': logs = os.popen("journalctl -k | grep UFW | tail -n 100").read()
             elif log_type == 'kernel': logs = os.popen("journalctl -k -n 100 --no-pager").read()
             elif log_type == 'pkg': logs = os.popen("tail -n 100 /var/log/dpkg.log 2>/dev/null").read()

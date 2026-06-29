@@ -7,8 +7,8 @@ check_preflight() {
         echo -e "[ ${RED}✖${NC} ] Error: This script requires root privileges. Execute with sudo or as root."
         exit 1
     fi
-    if ! ping -c 1 8.8.8.8 >/dev/null 2>&1; then
-        echo -e "[ ${RED}✖${NC} ] Error: No active internet connection detected."
+    if ! curl -s -I https://cloudflare.com -m 5 >/dev/null; then
+        echo -e "[ ${RED}✖${NC} ] Error: No active internet connection detected (HTTP 443 check failed)."
         exit 1
     fi
     if lsof /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || lsof /var/lib/apt/lists/lock >/dev/null 2>&1; then

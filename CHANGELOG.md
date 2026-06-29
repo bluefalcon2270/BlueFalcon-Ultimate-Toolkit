@@ -1,6 +1,14 @@
-VERSION="4.2"
+VERSION="4.3"
 
 # Changelog
+
+## [v4.3] - 2026-06-29
+### Changed
+- **Unified Network Manager**: Completely overhauled the WARP installation script (`vpn-scripts/warp/action.sh`). Eradicated the official `cloudflare-warp` desktop daemon which was causing catastrophic routing conflicts and pulling in 662MB of GUI bloatware. Replaced it with pure `wgcf` + `wireguard-tools` policy routing.
+- **Conflict Warning UI**: Added dynamic warning banners to the Web Panel dashboard. If WARP is running concurrently with OpenVPN or WireGuard, the dashboard actively informs the user that client outbound traffic is being bridged through Cloudflare.
+- **Cross-Platform Compatibility**: Normalized all bash and python scripts to Linux (LF) line endings to fix `\r` crash bugs on fresh deployments. Added `.gitattributes` to enforce this behavior.
+- **System Logs**: Fixed an issue where Ubuntu 24.04 nodes failed to load the authentication logs via `tail /var/log/auth.log`. Ported the logic to `journalctl -u ssh.service`.
+- **Preflight Checks**: Replaced brittle ICMP `ping` checks with HTTPS `curl` checks to ensure compatibility with strict cloud provider firewalls (AWS, Oracle, etc).
 
 ## [v4.2] - 2026-06-29
 ### Fixed
