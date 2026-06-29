@@ -1,6 +1,11 @@
-VERSION="3.8"
+VERSION="3.9"
 
 # Changelog
+
+## [v3.9] - 2026-06-29
+### Fixed
+- **Server Name Display**: Fixed bug where the panel would always display "openvpn" as the server name. Added a dedicated `display_name` column to allow custom node names while keeping protocol identifiers intact.
+- **Install State Persistence**: Fixed bug where running an install from the dashboard tabs wouldn't properly update the `is_installed` status upon completion, leaving the UI stuck in the "Not Installed" state.
 
 ## [v3.8] - 2026-06-28
 ### Fixed
