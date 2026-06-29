@@ -24,7 +24,7 @@ Run this single command with root privileges on your fresh VPS. It acts as an in
 bash <(curl -Ls https://raw.githubusercontent.com/bluefalcon2270/bluefalcon-ultimate-toolkit/main/install.sh)
 ```
 
-**Global Shortcut:** Once installed, simply type `bf-ui` from anywhere in your terminal to instantly launch the master control panel!
+**Global Shortcut:** Once installed, simply type `bfu` from anywhere in your terminal to instantly launch the master control panel!
 
 <br>
 

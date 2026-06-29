@@ -29,7 +29,7 @@ cd /opt/bluefalcon-ultimate-toolkit
 chmod +x setup.sh
 
 # Link the script to the system binary path for global access
-ln -sf /opt/bluefalcon-ultimate-toolkit/setup.sh /usr/local/bin/bfp
+ln -sf /opt/bluefalcon-ultimate-toolkit/setup.sh /usr/local/bin/bfu
 
 # Launch the menu using the new global command
-bfp
+bfu

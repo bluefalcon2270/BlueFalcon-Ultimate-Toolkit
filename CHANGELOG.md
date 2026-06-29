@@ -1,6 +1,14 @@
-VERSION="3.9.1"
+VERSION="4.1"
 
 # Changelog
+
+## [v4.1] - 2026-06-29
+### Fixed
+- **WARP Bloatware Installation**: Added `--no-install-recommends` to the Cloudflare WARP client installation script. This prevents the server from unnecessarily downloading and installing over 600MB of useless graphical desktop environments and GUI libraries on a headless VPS.
+
+## [v4.0] - 2026-06-29
+### Changed
+- **Terminal Shortcut**: Renamed the global terminal shortcut back to `bfu` (BlueFalcon Ultimate) per user request.
 
 ## [v3.9.1] - 2026-06-29
 ### Fixed

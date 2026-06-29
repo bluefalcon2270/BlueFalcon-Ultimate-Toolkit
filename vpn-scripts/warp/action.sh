@@ -35,7 +35,7 @@ install_warp() {
         apt-get update -y
         local dns_pkg="resolvconf"
         if apt-get install -s openresolv >/dev/null 2>&1; then dns_pkg="openresolv"; fi
-        apt-get install cloudflare-warp iproute2 "${dns_pkg}" wireguard-tools -y
+        apt-get install --no-install-recommends cloudflare-warp iproute2 "${dns_pkg}" wireguard-tools -y
     fi
 
     mkdir -p /etc/warp
