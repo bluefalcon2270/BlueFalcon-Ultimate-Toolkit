@@ -62,7 +62,13 @@ def init_db():
     try:
         conn.execute('ALTER TABLE settings ADD COLUMN public_ip TEXT')
     except sqlite3.OperationalError:
-        pass 
+        pass
+
+    # v3.9 Migration: Safely add display_name column for human-readable server name
+    try:
+        conn.execute("ALTER TABLE settings ADD COLUMN display_name TEXT DEFAULT 'BlueFalcon Node'")
+    except sqlite3.OperationalError:
+        pass
 
     conn.execute('CREATE TABLE IF NOT EXISTS users (display_name TEXT, system_name TEXT, password TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
     conn.execute('CREATE TABLE IF NOT EXISTS wg_users (display_name TEXT, system_name TEXT, pub_key TEXT, ip_address TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
@@ -176,10 +182,10 @@ def wizard():
         wg_status = -1 if install_wireguard else 0
         warp_status = -1 if install_warp else 0 
         
-        conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-                    ('openvpn', selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, ovpn_status, public_ip))
-        conn.execute('INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-                    ('wireguard', 'udp', wg_port, dns1, dns2, conn_limit, panel_port, wg_status, public_ip))
+        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('openvpn', server_name, selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, ovpn_status, public_ip))
+        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('wireguard', server_name, 'udp', wg_port, dns1, dns2, conn_limit, panel_port, wg_status, public_ip))
         
         conn.execute('DELETE FROM warp')
         conn.execute('INSERT INTO warp (is_installed) VALUES (?)', (warp_status,))
@@ -344,6 +350,11 @@ def run_ovpn_task(protocol, port, dns1, dns2):
             f.write(ansi_to_html(line))
             f.flush()
         process.wait()
+        
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='openvpn'")
+        conn.commit(); conn.close()
+        
         f.write(f"\n[DONE]\n")
 
 @app.route('/api/openvpn_stream', methods=['POST'])
@@ -356,7 +367,7 @@ def openvpn_stream():
     dns2 = '8.8.4.4' if preset == '8.8.8.8' else '1.0.0.1'
     
     conn = get_db()
-    conn.execute("UPDATE settings SET protocol=?, port=?, dns=?, dns2=?, is_installed=1 WHERE server_name='openvpn'", 
+    conn.execute("UPDATE settings SET protocol=?, port=?, dns=?, dns2=? WHERE server_name='openvpn'", 
                  (protocol, port, dns1, dns2))
     conn.commit(); conn.close()
     
@@ -380,6 +391,11 @@ def run_wg_task(action, port):
                 f.write(ansi_to_html(line))
                 f.flush()
             process.wait()
+            
+            conn = sqlite3.connect(DB_PATH)
+            conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='wireguard'")
+            conn.commit(); conn.close()
+            
             f.write(f"\n[DONE]\n")
 
 @app.route('/wireguard')
@@ -478,7 +494,9 @@ def get_warp_trace():
 def warp_dashboard():
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     conn = get_db()
-    settings = conn.execute('SELECT server_name FROM settings').fetchone()
+    settings = conn.execute("SELECT display_name FROM settings WHERE server_name='openvpn'").fetchone()
+    if not settings:
+        settings = conn.execute('SELECT display_name FROM settings').fetchone()
     conn.close()
     trace = get_warp_trace()
     wgcf_exists = os.path.exists('/etc/wireguard/wgcf.conf')
@@ -771,7 +789,9 @@ def preferences():
     conn = get_db()
     
     if request.method == 'POST':
-        curr_settings = conn.execute('SELECT * FROM settings').fetchone()
+        curr_settings = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
+        if curr_settings is None:
+            curr_settings = conn.execute('SELECT * FROM settings').fetchone()
         old_panel_port = curr_settings['panel_port']
         old_vpn_port = curr_settings['port']
         old_vpn_proto = curr_settings['protocol']
@@ -788,9 +808,12 @@ def preferences():
         new_vpn_port = int(request.form.get('vpn_port'))
         new_vpn_proto = request.form.get('vpn_protocol')
         new_public_ip = request.form.get('public_ip', curr_settings['public_ip'])
-        new_server_name = request.form.get('server_name', curr_settings['server_name'])
+        new_display_name = request.form.get('server_name', curr_settings['display_name'] if curr_settings['display_name'] else 'BlueFalcon Node')
         
-        conn.execute('UPDATE settings SET dns=?, dns2=?, conn_limit=?, panel_port=?, port=?, protocol=?, public_ip=?, server_name=?', (dns1, dns2, new_limit, new_panel_port, new_vpn_port, new_vpn_proto, new_public_ip, new_server_name))
+        # Update openvpn row settings (port, protocol, dns, etc.)
+        conn.execute("UPDATE settings SET dns=?, dns2=?, conn_limit=?, panel_port=?, port=?, protocol=?, public_ip=?, display_name=? WHERE server_name='openvpn'", (dns1, dns2, new_limit, new_panel_port, new_vpn_port, new_vpn_proto, new_public_ip, new_display_name))
+        # Update panel_port and display_name on wireguard row too
+        conn.execute("UPDATE settings SET panel_port=?, display_name=?, public_ip=? WHERE server_name='wireguard'", (new_panel_port, new_display_name, new_public_ip))
         if request.form.get('admin_user') and request.form.get('admin_pass'):
             conn.execute('DELETE FROM admin')
             conn.execute('INSERT INTO admin (username, password) VALUES (?, ?)', (request.form['admin_user'], request.form['admin_pass']))
@@ -836,7 +859,9 @@ def preferences():
             
         return redirect(url_for('preferences', tab='settings'))
         
-    settings = conn.execute('SELECT * FROM settings').fetchone()
+    settings = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
+    if settings is None:
+        settings = conn.execute('SELECT * FROM settings').fetchone()
     admin = conn.execute('SELECT * FROM admin').fetchone()
     
     log_type = request.args.get('log_type', 'unified')
@@ -908,20 +933,22 @@ def revoke(sys_name):
 def download(sys_name):
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     u = get_db().execute('SELECT display_name FROM users WHERE system_name = ?', (sys_name,)).fetchone()
-    s = get_db().execute('SELECT server_name FROM settings').fetchone()
+    s = get_db().execute("SELECT display_name FROM settings WHERE server_name='openvpn'").fetchone()
     file_path = f'{APP_DIR}/configs/{sys_name}.ovpn'
     if not os.path.exists(file_path): return "Error 404: Configuration file not found.", 404
-    custom_name = f"{s['server_name']} - {u['display_name']} (Auto).ovpn"
+    srv_label = s['display_name'] if s and s['display_name'] else 'BlueFalcon'
+    custom_name = f"{srv_label} - {u['display_name']} (Auto).ovpn"
     return send_file(file_path, as_attachment=True, download_name=custom_name)
 
 @app.route('/download_manual/<sys_name>')
 def download_manual(sys_name):
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
     u = get_db().execute('SELECT display_name FROM users WHERE system_name = ?', (sys_name,)).fetchone()
-    s = get_db().execute('SELECT server_name FROM settings').fetchone()
+    s = get_db().execute("SELECT display_name FROM settings WHERE server_name='openvpn'").fetchone()
     file_path = f'{APP_DIR}/configs/{sys_name}_manual.ovpn'
     if not os.path.exists(file_path): return "Error 404: Configuration file not found.", 404
-    custom_name = f"{s['server_name']} - {u['display_name']} (Manual).ovpn"
+    srv_label = s['display_name'] if s and s['display_name'] else 'BlueFalcon'
+    custom_name = f"{srv_label} - {u['display_name']} (Manual).ovpn"
     return send_file(file_path, as_attachment=True, download_name=custom_name)
 
 if __name__ == '__main__': app.run(host='0.0.0.0', port=2020)
