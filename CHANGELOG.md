@@ -1,6 +1,10 @@
-VERSION="4.1"
+VERSION="4.2"
 
 # Changelog
+
+## [v4.2] - 2026-06-29
+### Fixed
+- **WARP Client Revert**: Restored the exact `cloudflare-warp` installation behavior from `v4.0`. Removed the `--no-install-recommends` flag, as Cloudflare's proprietary client silently relies on some of those "recommended" dependencies (like `systemd-resolved` or `glib` networking tools) to establish its tunnel correctly.
 
 ## [v4.1] - 2026-06-29
 ### Fixed
