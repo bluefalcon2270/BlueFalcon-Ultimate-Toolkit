@@ -85,7 +85,7 @@ Endpoint = engage.cloudflareclient.com:2408
 EOF
 
     echo "[INFO] Securing routes and enabling Background Service..."
-    (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf") | crontab -
+    (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf"; echo "@reboot sleep 20 && systemctl restart wg-quick@wgcf") | crontab -
     systemctl enable --now wg-quick@wgcf
 }
 

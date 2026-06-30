@@ -1,6 +1,13 @@
-VERSION="4.4"
+VERSION="4.5"
 
 # Changelog
+
+## [v4.5] - 2026-06-30
+### Fixed
+- **WARP Boot Sequence Bug**: Fixed a critical issue where WARP (`wg-quick@wgcf`) would initialize too early during the server boot sequence, causing DNS resolution and outgoing internet traffic to fail, effectively blackholing `bfu` and OpenVPN. Added an `@reboot` delayed start cron to ensure a clean initialization.
+- **Preflight Internet Check**: Upgraded the `curl` internet connectivity check to bypass DNS resolution (`1.1.1.1`) to prevent false positives when WARP overrides `resolv.conf`.
+- **Panel Internal Server Error**: Fixed a 500 crash in the Preferences tab caused by an unclosed database connection and an invalid `.get()` method call on a raw `sqlite3.Row` object.
+- **Readonly Variable Crash**: Removed legacy `readonly APP_DIR` declarations across all module scripts that were crashing the `bfu` terminal command when sourced.
 
 ## [v4.4] - 2026-06-30
 ### Fixed

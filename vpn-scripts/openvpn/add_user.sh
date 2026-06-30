@@ -1,6 +1,6 @@
 #!/bin/bash
 u=$1; p=$2
-readonly APP_DIR="/opt/bluefalcon-ultimate-toolkit"
+APP_DIR="/opt/bluefalcon-ultimate-toolkit"
 
 # Fetch True IP from Database to avoid WARP hijacks
 IPV4=$(sqlite3 "${APP_DIR}/panel.db" "SELECT public_ip FROM settings LIMIT 1;")

@@ -1,5 +1,5 @@
 #!/bin/bash
-readonly APP_DIR="/opt/bluefalcon-ultimate-toolkit"
+APP_DIR="/opt/bluefalcon-ultimate-toolkit"
 echo "[INFO] Commencing OpenVPN Core Installation..."
 sleep 1
 if ! command -v openvpn >/dev/null 2>&1; then

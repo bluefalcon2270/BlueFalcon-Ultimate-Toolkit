@@ -7,7 +7,7 @@ check_preflight() {
         echo -e "[ ${RED}✖${NC} ] Error: This script requires root privileges. Execute with sudo or as root."
         exit 1
     fi
-    if ! curl -s -I https://cloudflare.com -m 5 >/dev/null; then
+    if ! curl -s -I https://1.1.1.1 -m 5 >/dev/null; then
         echo -e "[ ${RED}✖${NC} ] Error: No active internet connection detected (HTTP 443 check failed)."
         exit 1
     fi

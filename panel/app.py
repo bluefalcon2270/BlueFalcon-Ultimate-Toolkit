@@ -863,10 +863,13 @@ def preferences():
             
         return redirect(url_for('preferences', tab='settings'))
         
-    settings = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
-    if not settings: settings = conn.execute('SELECT * FROM settings').fetchone()
-    admin = conn.execute('SELECT * FROM admin').fetchone()
+    settings_row = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
+    if not settings_row: settings_row = conn.execute('SELECT * FROM settings').fetchone()
+    admin_row = conn.execute('SELECT * FROM admin').fetchone()
+    conn.close()
     
+    settings = dict(settings_row) if settings_row else {}
+    admin = dict(admin_row) if admin_row else {}
     log_type = request.args.get('log_type', 'unified')
     active_tab = request.args.get('tab', 'settings')
     
