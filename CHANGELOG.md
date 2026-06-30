@@ -1,7 +1,7 @@
 VERSION="5.2"
 
 # Changelog
-
+Fix2
 ## [v5.2.0] - 2026-06-30
 ### Fixed
 - **Xray REALITY Key Generation Bug**: Fixed a critical issue where the latest version of Xray changed its `x25519` command output format (from `Public key:` to `Password (PublicKey):`), which broke our setup script's `grep` regex. This caused the proxy server to initialize with an empty Reality Public Key, resulting in empty passwords in the generated `vless://` URLs and subsequent client connection failures with "PublicKey property is invalid" or "empty password".
