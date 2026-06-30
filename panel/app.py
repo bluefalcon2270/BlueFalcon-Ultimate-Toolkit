@@ -729,13 +729,13 @@ def get_xray_configs(sys_name):
     else:
         hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
         
-    sub_url = f"http://{request.host}/sub/xray/{sys_name}"
+    sub_link = f"http://{request.host}/sub/xray/{sys_name}"
     
     return jsonify({
         "vless_tcp": vless_tcp,
         "vless_xhttp": vless_xhttp,
         "hysteria": hysteria_uri,
-        "sub_link": sub_url
+        "sub_link": sub_link
     })
 
 @app.route('/warp')

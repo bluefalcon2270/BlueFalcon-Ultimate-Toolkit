@@ -43,6 +43,8 @@ try:
         json.dump({'pbk': pub, 'sid': sid}, f)
     with open('/tmp/xray_parsed_keys.txt', 'w') as f:
         f.write(prv + '\n' + sid)
+    os.chmod('/etc/xray/reality.json', 0o644)
+    os.chmod('/tmp/xray_parsed_keys.txt', 0o644)
 except Exception as e:
     print('Failed to parse keys:', e)
 "
@@ -128,6 +130,8 @@ openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/hysteria/server.key -out 
 
 # Generate the SHA256 pin for clients to avoid "insecure" MITM warnings
 openssl x509 -noout -fingerprint -sha256 -in /etc/hysteria/server.crt | awk -F= '{gsub(/:/, "", $2); print tolower($2)}' > /etc/hysteria/cert_pin.txt
+chmod 644 /etc/hysteria/cert_pin.txt
+chmod 644 /etc/hysteria/server.crt
 
 cat <<EOF > /etc/hysteria/config.yaml
 listen: :443

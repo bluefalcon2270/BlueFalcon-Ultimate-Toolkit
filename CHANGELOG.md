@@ -1,6 +1,11 @@
-VERSION="5.2"
+VERSION="5.3"
 
 # Changelog
+
+## [v5.3] - 2026-06-30
+### Fixed
+- **MISSING_PBK Permission Error**: Fixed an OS-level permission issue where the backend Python process (`app.py`) was denied read-access to the newly generated `/etc/xray/reality.json` file because it was created securely by root. The file is now safely `chmod 644` readable by the panel, guaranteeing the `pbk` variable populates perfectly.
+- **Subscription QR Failure**: Fixed a typo in the JSON schema (`sub_url` vs `sub_link`) that caused the new "Sub Link" QR code tab to generate an empty/invalid QR block, which threw a "Failure" scan error on Android.
 
 ## [v5.2] - 2026-06-30
 ### Fixed
