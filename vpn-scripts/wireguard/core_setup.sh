@@ -45,6 +45,8 @@ sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
 cat > /etc/sysctl.d/99-wireguard.conf << EOF
 net.ipv4.ip_forward=1
 net.ipv6.conf.all.forwarding=1
+net.ipv6.conf.all.accept_ra=2
+net.ipv6.conf.default.accept_ra=2
 EOF
 sysctl -p /etc/sysctl.d/99-wireguard.conf > /dev/null 2>&1
 

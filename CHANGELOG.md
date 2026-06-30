@@ -1,6 +1,10 @@
-VERSION="4.7"
+VERSION="4.8"
 
 # Changelog
+
+## [v4.8] - 2026-06-30
+### Fixed
+- **IPv6 SLAAC Disablement Bug**: Fixed an extremely obscure Linux kernel quirk where enabling IPv6 forwarding (`net.ipv6.conf.all.forwarding=1`) automatically forces the server to drop all Router Advertisements (SLAAC) on reboot. This caused VPS providers with dynamic IPv6 allocations to permanently lose their native IPv6 route upon server restart. Hardcoded `accept_ra=2` in sysctl to force the kernel to maintain its native IPv6 configuration while simultaneously routing VPN traffic.
 
 ## [v4.7] - 2026-06-30
 ### Added
