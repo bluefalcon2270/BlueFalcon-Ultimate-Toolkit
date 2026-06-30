@@ -73,7 +73,7 @@
                             <div class="flex gap-2">
                                 {% set vless_tcp = "vless://" ~ user.uuid ~ "@" ~ server_ip ~ ":" ~ port ~ "?security=reality&encryption=none&pbk=" ~ pubkey ~ "&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=" ~ sni ~ "&sid=" ~ shortid ~ "#" ~ user.display_name %}
                                 {% set vless_xhttp = "vless://" ~ user.uuid ~ "@" ~ server_ip ~ ":2053?security=reality&encryption=none&pbk=" ~ pubkey ~ "&headerType=none&fp=chrome&type=xhttp&sni=" ~ sni ~ "&sid=" ~ shortid ~ "#" ~ user.display_name ~ "_xhttp" %}
-                                {% set hysteria2 = "hysteria2://" ~ user.uuid ~ "@" ~ server_ip ~ ":" ~ port ~ "/?sni=" ~ sni ~ "&insecure=1#" ~ user.display_name ~ "_hy2" %}
+                                {% set hysteria2 = "hysteria2://" ~ user.uuid ~ "@" ~ server_ip ~ ":" ~ port ~ "/?sni=" ~ sni ~ ("&pinSHA256=" ~ certhash if certhash else "&insecure=1") ~ "#" ~ user.display_name ~ "_hy2" %}
                                 
                                 <button onclick="showProxyQr('VLESS (TCP)', '{{ vless_tcp }}')" class="flex-1 text-xs bg-[#2C2C2E] text-gray-300 border border-gray-600 rounded px-2 py-1 hover:bg-gray-700">VLESS</button>
                                 <button onclick="showProxyQr('xHTTP', '{{ vless_xhttp }}')" class="flex-1 text-xs bg-[#2C2C2E] text-gray-300 border border-gray-600 rounded px-2 py-1 hover:bg-gray-700">xHTTP</button>

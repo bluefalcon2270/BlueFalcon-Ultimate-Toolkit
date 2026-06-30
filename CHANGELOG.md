@@ -1,6 +1,11 @@
-VERSION="5.1"
+VERSION="5.2"
 
 # Changelog
+
+## [v5.2] - 2026-06-30
+### Fixed
+- **Xray Key Generation**: Fixed an issue where newer Xray binary outputs (`PrivateKey:` vs `Private key:`) caused the script to fail capturing REALITY keys, resulting in empty keys and connection failures in VLESS clients.
+- **Hysteria Certificate Error**: Fixed "allowInsecure removed" error in Xray 1.8+ by parsing the SHA256 fingerprint of the self-signed Hysteria certificate and setting the `pinSHA256` parameter in the `hysteria2://` URI instead of using `insecure=1`.
 
 ## [v5.1] - 2026-06-30
 ### Fixed

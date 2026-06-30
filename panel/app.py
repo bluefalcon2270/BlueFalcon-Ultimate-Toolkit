@@ -551,10 +551,12 @@ def proxy():
     port = proxy_settings['port'] if proxy_settings else 443
     sni = proxy_settings['sni'] if proxy_settings else 'www.microsoft.com'
     
-    # keys format: PUBKEY|SHORTID
+    # keys format: PUBKEY|SHORTID|CERTHASH
     keys = proxy_settings['keys'] if proxy_settings and proxy_settings['keys'] else "|"
-    pubkey = keys.split('|')[0] if '|' in keys else ""
-    shortid = keys.split('|')[1] if '|' in keys else ""
+    parts = keys.split('|')
+    pubkey = parts[0] if len(parts) > 0 else ""
+    shortid = parts[1] if len(parts) > 1 else ""
+    certhash = parts[2] if len(parts) > 2 else ""
     
     users_data = []
     if is_installed:
@@ -570,7 +572,7 @@ def proxy():
     
     conn.close()
     
-    return render_template('proxy.html', is_installed=is_installed, port=port, sni=sni, users=users_data, server_ip=server_ip, pubkey=pubkey, shortid=shortid)
+    return render_template('proxy.html', is_installed=is_installed, port=port, sni=sni, users=users_data, server_ip=server_ip, pubkey=pubkey, shortid=shortid, certhash=certhash)
 
 @app.route('/api/proxy_stream')
 def proxy_stream():
@@ -623,8 +625,10 @@ def proxy_subscription(uuid):
     port = proxy_settings['port'] if proxy_settings else 443
     sni = proxy_settings['sni'] if proxy_settings else 'www.microsoft.com'
     keys = proxy_settings['keys'] if proxy_settings and proxy_settings['keys'] else "|"
-    pubkey = keys.split('|')[0] if '|' in keys else ""
-    shortid = keys.split('|')[1] if '|' in keys else ""
+    parts = keys.split('|')
+    pubkey = parts[0] if len(parts) > 0 else ""
+    shortid = parts[1] if len(parts) > 1 else ""
+    certhash = parts[2] if len(parts) > 2 else ""
     
     ip = server_ip[0] if server_ip and server_ip[0] else ""
     if not ip:
@@ -635,7 +639,10 @@ def proxy_subscription(uuid):
     
     vless_tcp = f"vless://{uuid}@{ip}:{port}?security=reality&encryption=none&pbk={pubkey}&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni={sni}&sid={shortid}#{name}"
     vless_xhttp = f"vless://{uuid}@{ip}:2053?security=reality&encryption=none&pbk={pubkey}&headerType=none&fp=chrome&type=xhttp&sni={sni}&sid={shortid}#{name}_xhttp"
-    hysteria2 = f"hysteria2://{uuid}@{ip}:{port}/?sni={sni}&insecure=1#{name}_hy2"
+    if certhash:
+        hysteria2 = f"hysteria2://{uuid}@{ip}:{port}/?sni={sni}&pinSHA256={certhash}#{name}_hy2"
+    else:
+        hysteria2 = f"hysteria2://{uuid}@{ip}:{port}/?sni={sni}&insecure=1#{name}_hy2"
     
     # Base64 encode the config list
     import base64

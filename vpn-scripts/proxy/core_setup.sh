@@ -29,14 +29,17 @@ chmod +x /usr/local/bin/hysteria
 echo "  Generating Xray REALITY Keys"
 echo "-----------------------------------------------------"
 XRAY_KEYS=$(/usr/local/bin/xray x25519)
-XRAY_PRIV=$(echo "$XRAY_KEYS" | grep "Private key" | awk '{print $3}')
-XRAY_PUB=$(echo "$XRAY_KEYS" | grep "Public key" | awk '{print $3}')
+XRAY_PRIV=$(echo "$XRAY_KEYS" | grep -i "PrivateKey" | awk -F': ' '{print $2}')
+if [ -z "$XRAY_PRIV" ]; then XRAY_PRIV=$(echo "$XRAY_KEYS" | grep "Private key" | awk '{print $3}'); fi
+XRAY_PUB=$(echo "$XRAY_KEYS" | grep -i "PublicKey" | awk -F': ' '{print $2}')
+if [ -z "$XRAY_PUB" ]; then XRAY_PUB=$(echo "$XRAY_KEYS" | grep "Public key" | awk '{print $3}'); fi
 XRAY_SHORTID=$(openssl rand -hex 8)
 
 echo "  Generating Hysteria Certificates"
 echo "-----------------------------------------------------"
 openssl ecparam -genkey -name prime256v1 -out /etc/hysteria/server.key
 openssl req -new -x509 -days 36500 -key /etc/hysteria/server.key -out /etc/hysteria/server.crt -subj "/CN=${SNI}"
+HYSTERIA_CERTHASH=$(openssl x509 -in /etc/hysteria/server.crt -noout -fingerprint -sha256 | awk -F "=" '{print $2}' | sed 's/://g')
 
 echo "  Configuring Xray (VLESS-TCP-REALITY + VLESS-xHTTP-REALITY)"
 echo "-----------------------------------------------------"
@@ -164,6 +167,6 @@ ufw allow 2053/tcp > /dev/null 2>&1 || true
 ufw allow ${PORT}/udp > /dev/null 2>&1 || true
 
 # Update SQLite Database
-sqlite3 /opt/bluefalcon-ultimate-toolkit/panel.db "UPDATE settings SET is_installed=1, port=${PORT}, dns='${SNI}', dns2='${XRAY_PUB}|${XRAY_SHORTID}' WHERE server_name='proxy';"
+sqlite3 /opt/bluefalcon-ultimate-toolkit/panel.db "UPDATE settings SET is_installed=1, port=${PORT}, dns='${SNI}', dns2='${XRAY_PUB}|${XRAY_SHORTID}|${HYSTERIA_CERTHASH}' WHERE server_name='proxy';"
 
 echo "[ ✔ ] Xray & Hysteria successfully installed on TCP/UDP ${PORT} and TCP 2053!"
