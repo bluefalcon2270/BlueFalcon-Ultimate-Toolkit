@@ -1,148 +1,140 @@
 {% extends "base.html" %}
-{% block header_title %}Next-Gen Proxy (Xray/Hysteria){% endblock %}
+{% block header_title %}Xray & Hysteria Core{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <div class="lg:col-span-2 space-y-8">
-        {% if is_installed %}
-        <!-- Active Users Table -->
-        <div class="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl p-6 shadow-xl relative overflow-hidden">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h2 class="text-xl font-bold tracking-tight text-white mb-1">Proxy Clients</h2>
-                    <p class="text-sm text-gray-400">Manage VLESS and Hysteria 2 connections</p>
-                </div>
-                <button onclick="document.getElementById('addUserModal').style.display='flex'" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-lg shadow-blue-500/20 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    Add Client
-                </button>
+<div class="space-y-8 max-w-6xl">
+    
+    {% if is_installed %}
+    <!-- Active Proxy Status -->
+    <div class="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl p-6 shadow-xl flex items-center justify-between">
+        <div class="flex items-center gap-6">
+            <div class="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
             </div>
+            <div>
+                <h2 class="text-2xl font-bold text-white mb-1">Xray & Hysteria Active</h2>
+                <div class="flex gap-4 text-sm text-gray-400 font-mono">
+                    <span><strong class="text-gray-300">Port:</strong> {{ port }}</span>
+                    <span><strong class="text-gray-300">SNI:</strong> {{ sni }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="window.location.href='/proxy/action/restart'" class="bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors border border-white/10">Restart Engines</button>
+            <button onclick="if(confirm('Purge Xray and Hysteria completely?')) window.location.href='/proxy/action/purge'" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-2 rounded-xl text-sm font-medium transition-colors border border-red-500/20">Uninstall</button>
+        </div>
+    </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-gray-800 text-gray-400 text-sm tracking-wider uppercase">
-                            <th class="pb-4 font-semibold px-2">Client Name</th>
-                            <th class="pb-4 font-semibold px-2">UUID</th>
-                            <th class="pb-4 font-semibold px-2">Links</th>
-                            <th class="pb-4 font-semibold px-2 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-800/50">
-                        {% for user in users %}
-                        <tr class="hover:bg-white/5 transition-colors group">
-                            <td class="py-4 px-2">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold">
-                                        {{ user.display_name[:2].upper() }}
-                                    </div>
-                                    <span class="font-medium text-gray-200">{{ user.display_name }}</span>
+    <!-- Proxy Clients Table -->
+    <div class="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-bold tracking-tight text-white mb-1">Client Connections</h2>
+                <p class="text-sm text-gray-400">Manage VLESS and Hysteria 2 configurations</p>
+            </div>
+            <button onclick="document.getElementById('addUserModal').style.display='flex'" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Add Client
+            </button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-800 text-gray-400 text-sm tracking-wider uppercase">
+                        <th class="pb-4 font-semibold px-2">Client Name</th>
+                        <th class="pb-4 font-semibold px-2">UUID</th>
+                        <th class="pb-4 font-semibold px-2">Subscription & Links</th>
+                        <th class="pb-4 font-semibold px-2 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/50">
+                    {% for user in users %}
+                    <tr class="hover:bg-white/5 transition-colors group">
+                        <td class="py-4 px-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold">
+                                    {{ user.display_name[:2].upper() }}
                                 </div>
-                            </td>
-                            <td class="py-4 px-2 text-gray-400 text-sm font-mono truncate max-w-[120px]" title="{{ user.uuid }}">
-                                {{ user.uuid[:8] }}...
-                            </td>
-                            <td class="py-4 px-2 text-gray-400 text-sm">
+                                <span class="font-medium text-gray-200">{{ user.display_name }}</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-2 text-gray-400 text-sm font-mono" title="{{ user.uuid }}">
+                            {{ user.uuid[:13] }}...
+                        </td>
+                        <td class="py-4 px-2 text-sm space-y-2">
+                            <!-- Subscription Button -->
+                            {% set sub_url = "http://" ~ server_ip ~ ":" ~ request.host.split(':')[-1] ~ "/api/sub/" ~ user.uuid %}
+                            <button onclick="copyToClipboard('{{ sub_url }}')" class="w-full text-center bg-blue-600/20 text-blue-300 border border-blue-500/50 rounded-lg px-3 py-1.5 hover:bg-blue-600/40 transition-colors font-medium flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                Copy Subscription URL
+                            </button>
+                            
+                            <div class="flex gap-2">
                                 {% set vless_tcp = "vless://" ~ user.uuid ~ "@" ~ server_ip ~ ":" ~ port ~ "?security=reality&encryption=none&pbk=" ~ pubkey ~ "&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni=" ~ sni ~ "&sid=" ~ shortid ~ "#" ~ user.display_name %}
                                 {% set vless_xhttp = "vless://" ~ user.uuid ~ "@" ~ server_ip ~ ":2053?security=reality&encryption=none&pbk=" ~ pubkey ~ "&headerType=none&fp=chrome&type=xhttp&sni=" ~ sni ~ "&sid=" ~ shortid ~ "#" ~ user.display_name ~ "_xhttp" %}
                                 {% set hysteria2 = "hysteria2://" ~ user.uuid ~ "@" ~ server_ip ~ ":" ~ port ~ "/?sni=" ~ sni ~ "&insecure=1#" ~ user.display_name ~ "_hy2" %}
                                 
-                                <button onclick="copyToClipboard('{{ vless_tcp }}')" class="text-xs bg-blue-900/30 text-blue-300 border border-blue-800/50 rounded px-2 py-1 mb-1 hover:bg-blue-800/50 block">Copy VLESS (TCP)</button>
-                                <button onclick="copyToClipboard('{{ vless_xhttp }}')" class="text-xs bg-indigo-900/30 text-indigo-300 border border-indigo-800/50 rounded px-2 py-1 mb-1 hover:bg-indigo-800/50 block">Copy VLESS (xHTTP)</button>
-                                <button onclick="copyToClipboard('{{ hysteria2 }}')" class="text-xs bg-purple-900/30 text-purple-300 border border-purple-800/50 rounded px-2 py-1 hover:bg-purple-800/50 block">Copy Hysteria2</button>
-                            </td>
-                            <td class="py-4 px-2 text-right">
-                                <button onclick="deleteProxyUser('{{ user.display_name }}')" class="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors" title="Delete Client">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="4" class="py-8 text-center text-gray-500 italic">No proxy clients generated yet.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        {% else %}
-        <!-- Installation Card -->
-        <div class="bg-[#1C1C1E] border border-blue-500/30 rounded-2xl p-8 shadow-[0_0_40px_rgba(59,130,246,0.1)] relative overflow-hidden flex flex-col items-center text-center">
-            <div class="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent opacity-50"></div>
-            <div class="relative z-10 w-full max-w-md">
-                <div class="w-20 h-20 bg-gradient-to-br from-[#0B57D0] to-[#A8C7FA] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/20">
-                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
-                </div>
-                <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">Deploy Next-Gen Proxy</h2>
-                <p class="text-gray-400 mb-8 leading-relaxed">Installs Xray-core (VLESS-REALITY) and Hysteria-core 2 natively onto this server. Bypasses advanced firewalls automatically.</p>
-                
-                <form id="installProxyForm" class="text-left space-y-4 w-full">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Port</label>
-                        <input type="number" id="proxy_port" name="proxy_port" value="443" class="w-full bg-[#111113] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Camouflage Domain (SNI)</label>
-                        <input type="text" id="proxy_sni" name="proxy_sni" value="www.microsoft.com" class="w-full bg-[#111113] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
-                        <p class="text-xs text-gray-500 mt-1">Website must use TLS 1.3 and be unblocked.</p>
-                    </div>
-                    <button type="button" onclick="startProxyInstall()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40">
-                        Compile & Deploy Engines
-                    </button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Terminal Output -->
-        <div class="bg-[#0F0F11] border border-[#2C2C2E] rounded-xl overflow-hidden shadow-2xl flex flex-col h-[400px]">
-            <div class="bg-[#1C1C1E] border-b border-[#2C2C2E] px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span class="text-sm font-medium text-gray-300">Proxy Deployment Log</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs text-gray-500">Auto-scroll</span>
-                    <button id="scrollToggle" class="scroll-toggle on" onclick="toggleScroll()"><div class="thumb"></div></button>
-                </div>
-            </div>
-            <div id="termOutput" class="p-5 font-mono text-sm leading-relaxed text-gray-300 flex-1 term-scroll whitespace-pre-wrap">BlueFalcon OS > System ready. Waiting for tasks...</div>
+                                <button onclick="copyToClipboard('{{ vless_tcp }}')" class="flex-1 text-xs bg-[#2C2C2E] text-gray-300 border border-gray-600 rounded px-2 py-1 hover:bg-gray-700">VLESS</button>
+                                <button onclick="copyToClipboard('{{ vless_xhttp }}')" class="flex-1 text-xs bg-[#2C2C2E] text-gray-300 border border-gray-600 rounded px-2 py-1 hover:bg-gray-700">xHTTP</button>
+                                <button onclick="copyToClipboard('{{ hysteria2 }}')" class="flex-1 text-xs bg-[#2C2C2E] text-gray-300 border border-gray-600 rounded px-2 py-1 hover:bg-gray-700">Hysteria2</button>
+                            </div>
+                        </td>
+                        <td class="py-4 px-2 text-right">
+                            <button onclick="deleteProxyUser('{{ user.display_name }}')" class="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors" title="Delete Client">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="py-8 text-center text-gray-500 italic">No proxy clients generated yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <!-- Right Sidebar Info -->
-    <div class="space-y-6">
-        <div class="bg-[#1C1C1E] border border-[#2C2C2E] rounded-2xl p-6 shadow-xl">
-            <h3 class="text-lg font-bold text-white mb-4">Proxy Engine Status</h3>
-            <div class="space-y-4">
-                <div class="flex justify-between items-center p-3 rounded-lg bg-white/5 border border-white/5">
-                    <span class="text-gray-400 text-sm">Status</span>
-                    {% if is_installed %}
-                    <span class="text-emerald-400 font-medium text-sm flex items-center gap-1.5"><div class="w-2 h-2 bg-emerald-400 rounded-full shadow-[0_0_8px_#34d399]"></div> Online</span>
-                    {% else %}
-                    <span class="text-gray-500 font-medium text-sm">Offline</span>
-                    {% endif %}
-                </div>
-                <div class="flex justify-between items-center p-3 rounded-lg bg-white/5 border border-white/5">
-                    <span class="text-gray-400 text-sm">Base Port</span>
-                    <span class="text-white font-mono text-sm">{{ port }}</span>
-                </div>
-                <div class="flex justify-between items-center p-3 rounded-lg bg-white/5 border border-white/5">
-                    <span class="text-gray-400 text-sm">Camouflage (SNI)</span>
-                    <span class="text-white font-mono text-sm">{{ sni }}</span>
-                </div>
+    {% else %}
+    <!-- Installation Card -->
+    <div class="bg-[#1C1C1E] border border-blue-500/30 rounded-2xl p-8 shadow-[0_0_40px_rgba(59,130,246,0.1)] relative overflow-hidden flex flex-col items-center text-center">
+        <div class="absolute inset-0 bg-gradient-to-b from-blue-500/10 to-transparent opacity-50"></div>
+        <div class="relative z-10 w-full max-w-md">
+            <div class="w-20 h-20 bg-gradient-to-br from-[#0B57D0] to-[#A8C7FA] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/20">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
             </div>
+            <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">Deploy Xray & Hysteria</h2>
+            <p class="text-gray-400 mb-8 leading-relaxed">Installs Xray-core (VLESS-REALITY) and Hysteria-core 2 natively onto this server. Bypasses advanced firewalls automatically.</p>
             
-            {% if is_installed %}
-            <div class="mt-6 space-y-3">
-                <button onclick="window.location.href='/proxy/action/restart'" class="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 py-2.5 rounded-xl text-sm font-medium transition-colors">
-                    Restart Engines
+            <form id="installProxyForm" class="text-left space-y-4 w-full">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Port</label>
+                    <input type="number" id="proxy_port" name="proxy_port" value="443" class="w-full bg-[#111113] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Camouflage Domain (SNI)</label>
+                    <input type="text" id="proxy_sni" name="proxy_sni" value="www.microsoft.com" class="w-full bg-[#111113] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors">
+                    <p class="text-xs text-gray-500 mt-1">Website must use TLS 1.3 and be unblocked.</p>
+                </div>
+                <button type="button" onclick="startProxyInstall()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-4 rounded-xl font-semibold text-lg transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40">
+                    Compile & Deploy Engines
                 </button>
-                <button onclick="if(confirm('Purge Xray and Hysteria completely?')) window.location.href='/proxy/action/purge'" class="w-full flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 py-2.5 rounded-xl text-sm font-medium transition-colors">
-                    Remove Proxies
-                </button>
-            </div>
-            {% endif %}
+            </form>
         </div>
+    </div>
+    {% endif %}
+
+    <!-- Terminal Output -->
+    <div class="bg-[#0F0F11] border border-[#2C2C2E] rounded-xl overflow-hidden shadow-2xl flex flex-col h-[400px]">
+        <div class="bg-[#1C1C1E] border-b border-[#2C2C2E] px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span class="text-sm font-medium text-gray-300">Deployment Log</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-500">Auto-scroll</span>
+                <button id="scrollToggle" class="scroll-toggle on" onclick="toggleScroll()"><div class="thumb"></div></button>
+            </div>
+        </div>
+        <div id="termOutput" class="p-5 font-mono text-sm leading-relaxed text-gray-300 flex-1 term-scroll whitespace-pre-wrap">BlueFalcon OS > System ready. Waiting for tasks...</div>
     </div>
 </div>
 
@@ -158,7 +150,7 @@
                 <label class="block text-sm font-medium text-gray-400 mb-1">Client Name</label>
                 <input type="text" id="clientName" required class="w-full bg-[#111113] border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors" placeholder="e.g. JohnPhone">
             </div>
-            <button type="button" onclick="submitAddUser()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/20 mt-4">Generate Links</button>
+            <button type="button" onclick="submitAddUser()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/20 mt-4">Generate Subscription</button>
         </form>
     </div>
 </div>
@@ -235,7 +227,7 @@
     
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
-            alert("Link copied to clipboard!");
+            alert("Copied to clipboard!");
         });
     }
 </script>

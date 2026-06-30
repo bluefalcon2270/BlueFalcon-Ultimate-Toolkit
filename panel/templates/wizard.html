@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <title>Setup | BlueFalcon</title>
@@ -114,6 +114,29 @@
                 </div>
                 <div class="box-body" id="wg_body">
                     <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Listening Port</label><input type="number" name="wg_port" value="51820" class="input-field"></div>
+                </div>
+            </div>
+
+            <!-- Box Xray -->
+            <div class="material-card">
+                <div class="box-header" onclick="document.getElementById('proxy_toggle').click();">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-[#A8C7FA]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path></svg>
+                            Xray & Hysteria
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-1">VLESS REALITY and Hysteria 2 Stealth Core.</p>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation();">
+                        <input type="checkbox" name="install_proxy" id="proxy_toggle" onchange="toggleBox(this, 'proxy_body')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="box-body" id="proxy_body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Base Port</label><input type="number" name="proxy_port" value="443" class="input-field"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Camouflage (SNI)</label><input type="text" name="proxy_sni" value="www.microsoft.com" class="input-field"></div>
+                    </div>
                 </div>
             </div>
 

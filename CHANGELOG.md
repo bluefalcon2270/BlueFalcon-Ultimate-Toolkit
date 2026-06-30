@@ -1,6 +1,14 @@
-VERSION="4.9"
+VERSION="5.0"
 
 # Changelog
+
+## [v5.0] - 2026-06-30
+### Added
+- **Subscription API Links**: Added automated backend proxy subscription generation! Clicking "Copy Subscription URL" will now give you a single Base64 encoded link that will automatically download the VLESS-TCP, VLESS-xHTTP, and Hysteria 2 configurations seamlessly into client apps like v2rayNG and Nekobox.
+- **Xray & Hysteria Wizard Setup**: You can now install and configure Xray & Hysteria directly during the initial system setup wizard.
+- **UI & Layout Engine Overhaul**: Completely overhauled the WireGuard and Proxy panel templates to use a native, responsive full-width block stack (matching the OpenVPN tab).
+- Fixed missing `unzip` and `jq` installation errors on raw debian installs.
+- Renamed "Next-Gen Proxy" to the more transparent and accurate "Xray & Hysteria Core".
 
 ## [v4.9] - 2026-06-30
 ### Added

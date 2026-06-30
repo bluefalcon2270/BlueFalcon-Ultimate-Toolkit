@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Next-Gen Proxy Core Setup Script (Xray & Hysteria 2)
+# Xray & Hysteria Core Setup Script
 # ==============================================================================
 set -e
 umask 077
@@ -8,10 +8,12 @@ umask 077
 PORT="${1:-443}"
 SNI="${2:-www.microsoft.com}"
 
-echo "🚀 STARTING NEXT-GEN PROXY INSTALLATION..."
+echo "🚀 STARTING XRAY & HYSTERIA INSTALLATION..."
 echo "-----------------------------------------------------"
 echo "  Downloading Core Engines"
 echo "-----------------------------------------------------"
+apt-get update -y > /dev/null 2>&1
+apt-get install -y unzip jq curl > /dev/null 2>&1
 mkdir -p /usr/local/bin /etc/xray /etc/hysteria /var/log/xray /var/log/hysteria
 
 # Install Xray
@@ -164,4 +166,4 @@ ufw allow ${PORT}/udp > /dev/null 2>&1 || true
 # Update SQLite Database
 sqlite3 /opt/bluefalcon-ultimate-toolkit/panel.db "UPDATE settings SET is_installed=1, port=${PORT}, dns='${SNI}', dns2='${XRAY_PUB}|${XRAY_SHORTID}' WHERE server_name='proxy';"
 
-echo "[ ✔ ] Next-Gen Proxy successfully installed on TCP/UDP ${PORT} and TCP 2053!"
+echo "[ ✔ ] Xray & Hysteria successfully installed on TCP/UDP ${PORT} and TCP 2053!"

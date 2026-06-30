@@ -169,7 +169,10 @@ def wizard():
         install_warp = request.form.get('install_warp') == 'on'
         install_openvpn = request.form.get('install_openvpn') == 'on'
         install_wireguard = request.form.get('install_wireguard') == 'on'
+        install_proxy = request.form.get('install_proxy') == 'on'
         wg_port = int(request.form.get('wg_port', 51820))
+        proxy_port = int(request.form.get('proxy_port', 443))
+        proxy_sni = request.form.get('proxy_sni', 'www.microsoft.com')
         warp_target = request.form.get('warp_target', '3')
         warp_license = request.form.get('warp_license', 'free')
 
@@ -185,12 +188,15 @@ def wizard():
         
         ovpn_status = -1 if install_openvpn else 0
         wg_status = -1 if install_wireguard else 0
+        proxy_status = -1 if install_proxy else 0
         warp_status = -1 if install_warp else 0 
         
         conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
                     ('openvpn', server_name, selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, ovpn_status, public_ip))
         conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
                     ('wireguard', server_name, 'udp', wg_port, dns1, dns2, conn_limit, panel_port, wg_status, public_ip))
+        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('proxy', server_name, 'tcp/udp', proxy_port, proxy_sni, '', conn_limit, panel_port, proxy_status, public_ip))
         
         conn.execute('DELETE FROM warp')
         conn.execute('INSERT INTO warp (is_installed) VALUES (?)', (warp_status,))
@@ -215,6 +221,7 @@ def install_execute():
         warp_pending = conn.execute('SELECT is_installed FROM warp').fetchone()[0] == -1
         ovpn_pending = conn.execute("SELECT is_installed FROM settings WHERE server_name='openvpn'").fetchone()[0] == -1
         wg_pending = conn.execute("SELECT is_installed FROM settings WHERE server_name='wireguard'").fetchone()[0] == -1
+        proxy_pending = conn.execute("SELECT is_installed FROM settings WHERE server_name='proxy'").fetchone()[0] == -1
         conn.close()
 
         yield "data: 🦅 INITIALIZING BLUEFALCON DEPLOYMENT SEQUENCE\n\n"
@@ -247,6 +254,21 @@ def install_execute():
             
             conn = get_db()
             conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='wireguard'")
+            conn.commit(); conn.close()
+
+        if proxy_pending:
+            yield "data: \n\n"
+            yield "data: [XRAY & HYSTERIA] Starting Core Configuration...\n\n"
+            conn = get_db()
+            p_settings = conn.execute("SELECT port, dns FROM settings WHERE server_name='proxy'").fetchone()
+            conn.close()
+            
+            process = subprocess.Popen(['bash', f'{APP_DIR}/vpn-scripts/proxy/core_setup.sh', str(p_settings[0]), p_settings[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in iter(process.stdout.readline, ''): yield f"data: {line}\n\n"
+            process.stdout.close(); process.wait()
+            
+            conn = get_db()
+            conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='proxy'")
             conn.commit(); conn.close()
         
         if warp_pending:
@@ -570,6 +592,42 @@ def del_proxy_user():
     if name:
         subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/proxy/del_user.sh', name], check=False)
     return jsonify({"status": "success"})
+
+@app.route('/api/sub/<uuid>')
+def proxy_subscription(uuid):
+    conn = get_db()
+    user = conn.execute("SELECT display_name FROM proxy_users WHERE uuid=?", (uuid,)).fetchone()
+    if not user:
+        conn.close()
+        return "Invalid UUID", 404
+        
+    proxy_settings = conn.execute("SELECT port, dns as sni, dns2 as keys FROM settings WHERE server_name='proxy'").fetchone()
+    server_ip = conn.execute("SELECT public_ip FROM settings WHERE server_name='openvpn'").fetchone()
+    conn.close()
+    
+    port = proxy_settings['port'] if proxy_settings else 443
+    sni = proxy_settings['sni'] if proxy_settings else 'www.microsoft.com'
+    keys = proxy_settings['keys'] if proxy_settings and proxy_settings['keys'] else "|"
+    pubkey = keys.split('|')[0] if '|' in keys else ""
+    shortid = keys.split('|')[1] if '|' in keys else ""
+    
+    ip = server_ip[0] if server_ip and server_ip[0] else ""
+    if not ip:
+        primary_if = os.popen("ip route show table main | awk '/default/ {print $5}' | head -1").read().strip()
+        ip = os.popen(f"curl --interface {primary_if} -s4 ifconfig.me").read().strip()
+
+    name = user['display_name']
+    
+    vless_tcp = f"vless://{uuid}@{ip}:{port}?security=reality&encryption=none&pbk={pubkey}&headerType=none&fp=chrome&type=tcp&flow=xtls-rprx-vision&sni={sni}&sid={shortid}#{name}"
+    vless_xhttp = f"vless://{uuid}@{ip}:2053?security=reality&encryption=none&pbk={pubkey}&headerType=none&fp=chrome&type=xhttp&sni={sni}&sid={shortid}#{name}_xhttp"
+    hysteria2 = f"hysteria2://{uuid}@{ip}:{port}/?sni={sni}&insecure=1#{name}_hy2"
+    
+    # Base64 encode the config list
+    import base64
+    config_str = f"{vless_tcp}\n{vless_xhttp}\n{hysteria2}"
+    b64_config = base64.b64encode(config_str.encode('utf-8')).decode('utf-8')
+    
+    return Response(b64_config, mimetype='text/plain')
 
 @app.route('/proxy/action/<action>', methods=['POST', 'GET'])
 def proxy_action(action):

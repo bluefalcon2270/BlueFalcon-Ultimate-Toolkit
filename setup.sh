@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # BlueFalcon Ultimate Toolkit (God Script)
-# Version: v4.9
+# Version: v5.0
 # Architecture: Optimized for Debian & Ubuntu (Bash/Python/SQLite Stack)
 # ==============================================================================
 
@@ -37,7 +37,7 @@ show_main_menu() {
     echo "1. Web Panel"
     echo "2. OpenVPN"
     echo "3. WireGuard"
-    echo "4. Next-Gen Proxy (Xray/Hysteria)"
+    echo "4. Xray & Hysteria"
     echo "5. WARP"
     echo "6. Essentials"
     echo "7. Backup/Restore"

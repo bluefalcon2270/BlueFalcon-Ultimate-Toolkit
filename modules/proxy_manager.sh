@@ -5,7 +5,7 @@
 manage_proxy() {
     clear
     echo -e "${BOLD_BLUE}=====================================================${NC}"
-    echo -e "${BOLD_BLUE}             Next-Gen Proxy (Xray/Hysteria)          ${NC}"
+    echo -e "${BOLD_BLUE}                Xray & Hysteria Core                 ${NC}"
     echo -e "${BOLD_BLUE}=====================================================${NC}"
     echo ""
     
@@ -28,7 +28,7 @@ manage_proxy() {
     else
         echo -e "Status: [ ${RED}OFFLINE${NC} ]"
         echo ""
-        echo "1. Install Next-Gen Proxy (VLESS+REALITY & Hysteria 2)"
+        echo "1. Install Xray (VLESS+REALITY) & Hysteria 2"
     fi
     echo "0. Back to Main Menu"
     echo ""
