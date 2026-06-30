@@ -66,6 +66,8 @@ dh dh.pem
 tls-crypt tc.key
 crl-verify crl.pem
 server 10.8.0.0 255.255.255.0
+server-ipv6 fd42:42:42:42::/112
+push "route-ipv6 2000::/3"
 push "redirect-gateway def1 bypass-dhcp"
 push "dhcp-option DNS $DNS"
 EOCONF
@@ -93,6 +95,7 @@ LIMIT=$(sqlite3 "${APP_DIR}/panel.db" "SELECT conn_limit FROM settings LIMIT 1;"
 if [ "$LIMIT" == "unlimited" ]; then echo "duplicate-cn" >> /etc/openvpn/server/server.conf; fi
 cat > /etc/sysctl.d/99-openvpn.conf << EOF
 net.ipv4.ip_forward=1
+net.ipv6.conf.all.forwarding=1
 net.ipv4.conf.all.rp_filter=2
 net.ipv4.conf.default.rp_filter=2
 EOF
@@ -106,7 +109,7 @@ if command -v ufw >/dev/null 2>&1; then
     ufw reload >/dev/null 2>&1
 fi
 
-ETH=$(ip -4 route ls | grep default | awk '{print $5}' | head -1)
+ETH=$(ip route show table main | awk '/default/ {print $5}' | head -1)
 
 # Allow traffic in and out of the VPN tunnel
 iptables -I FORWARD 1 -i tun+ -j ACCEPT
@@ -116,6 +119,14 @@ iptables -I FORWARD 1 -s 10.8.0.0/24 -j ACCEPT
 # Masquerade (hide) the VPN traffic globally (allows WARP bridging)
 if ! iptables -t nat -C POSTROUTING -s 10.8.0.0/24 -j MASQUERADE 2>/dev/null; then
     iptables -t nat -I POSTROUTING 1 -s 10.8.0.0/24 -j MASQUERADE
+fi
+
+# IPv6 routing & NAT
+ip6tables -I FORWARD 1 -i tun+ -j ACCEPT
+ip6tables -I FORWARD 1 -o tun+ -j ACCEPT
+ip6tables -I FORWARD 1 -s fd42:42:42:42::/112 -j ACCEPT
+if ! ip6tables -t nat -C POSTROUTING -s fd42:42:42:42::/112 -j MASQUERADE 2>/dev/null; then
+    ip6tables -t nat -I POSTROUTING 1 -s fd42:42:42:42::/112 -j MASQUERADE
 fi
 
 netfilter-persistent save > /dev/null 2>&1

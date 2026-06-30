@@ -44,6 +44,7 @@ for i in {2..254}; do
     candidate="10.7.0.${i}"
     if ! echo "$USED_IPS" | grep -q "$candidate"; then
         CLIENT_IP="$candidate"
+        CLIENT_IPV6="fd42:42:42:43::${i}"
         break
     fi
 done
@@ -60,18 +61,18 @@ cat >> "${WG_DIR}/wg0.conf" <<EOF
 [Peer]
 PublicKey = ${CLIENT_PUB}
 PresharedKey = ${CLIENT_PSK}
-AllowedIPs = ${CLIENT_IP}/32
+AllowedIPs = ${CLIENT_IP}/32, ${CLIENT_IPV6}/128
 # END_PEER ${CLIENT_NAME}
 EOF
 
 # Apply live without restarting the interface
-wg set wg0 peer "${CLIENT_PUB}" preshared-key "${CLIENT_NAME}_preshared.key" allowed-ips "${CLIENT_IP}/32"
+wg set wg0 peer "${CLIENT_PUB}" preshared-key "${CLIENT_NAME}_preshared.key" allowed-ips "${CLIENT_IP}/32,${CLIENT_IPV6}/128"
 
 # Generate client config file
 cat > "${CLIENT_DIR}/${CLIENT_NAME}.conf" <<EOF
 [Interface]
 PrivateKey = ${CLIENT_PRIV}
-Address = ${CLIENT_IP}/24
+Address = ${CLIENT_IP}/24, ${CLIENT_IPV6}/128
 DNS = ${DNS1}, ${DNS2}
 
 [Peer]

@@ -8,7 +8,7 @@ umask 077
 PORT="${1:-51820}"
 DNS1="${2:-8.8.8.8}"
 DNS2="${3:-8.8.4.4}"
-PUBLIC_IP=$(curl --interface $(ip route | awk '/default/ {print $5}' | head -1) -s4 ifconfig.me)
+PUBLIC_IP=$(curl --interface $(ip route show table main | awk '/default/ {print $5}' | head -1) -s4 ifconfig.me)
 
 echo "🚀 STARTING WIREGUARD INSTALLATION..."
 echo "-----------------------------------------------------"
@@ -28,21 +28,24 @@ SERVER_PRIV=$(cat server_private.key)
 
 echo "  Configuring wg0 Interface"
 echo "-----------------------------------------------------"
-SERVER_PUB_NIC=$(ip route | awk '/default/ {print $5}' | head -1)
+SERVER_PUB_NIC=$(ip route show table main | awk '/default/ {print $5}' | head -1)
 
 cat > /etc/wireguard/wg0.conf <<EOF
 [Interface]
-Address = 10.7.0.1/24
+Address = 10.7.0.1/24, fd42:42:42:43::1/64
 ListenPort = ${PORT}
 PrivateKey = ${SERVER_PRIV}
-PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
-PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
+PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE; ip6tables -D FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
 EOF
 
 echo "  Enabling IP Forwarding"
 echo "-----------------------------------------------------"
 sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf
-echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-wireguard.conf
+cat > /etc/sysctl.d/99-wireguard.conf << EOF
+net.ipv4.ip_forward=1
+net.ipv6.conf.all.forwarding=1
+EOF
 sysctl -p /etc/sysctl.d/99-wireguard.conf > /dev/null 2>&1
 
 echo "  Configuring Firewall (UFW)"

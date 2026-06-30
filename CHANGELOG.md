@@ -1,6 +1,13 @@
-VERSION="4.6"
+VERSION="4.7"
 
 # Changelog
+
+## [v4.7] - 2026-06-30
+### Added
+- **Dual-Stack Native IPv6 Tunneling**: Massively upgraded both OpenVPN and WireGuard routing engines to natively support IPv6 inside the VPN tunnels using Unique Local Address (ULA) subnets (`fd42::`). This permanently fixes IPv6 leaks on client devices and allows connected clients to utilize WARP's IPv6 routing seamlessly.
+  - Added `ip6tables` NAT routing and `sysctl` IPv6 forwarding to all VPN installations.
+  - Wireguard client generator now pushes `::/0` and statically assigns `fd42:42:42:43::/128` per user.
+  - OpenVPN core setup now pushes `route-ipv6 2000::/3` and assigns a `server-ipv6 fd42:42:42:42::/112` topology.
 
 ## [v4.6] - 2026-06-30
 ### Fixed
