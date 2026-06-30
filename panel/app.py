@@ -1,6 +1,6 @@
 # /opt/bluefalcon-ultimate-toolkit/panel/app.py
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, Response, jsonify
-import sqlite3, os, time, subprocess, re, psutil, threading
+import sqlite3, os, time, subprocess, re, psutil, threading, uuid, base64
 
 app = Flask(__name__)
 app.secret_key = 'BlueFalcon_Enterprise_Secret_Key_2026'
@@ -70,8 +70,15 @@ def init_db():
     except sqlite3.OperationalError:
         pass
 
+    # v4.0 Migration: Safely add sni column for Xray REALITY
+    try:
+        conn.execute("ALTER TABLE settings ADD COLUMN sni TEXT")
+    except sqlite3.OperationalError:
+        pass
+
     conn.execute('CREATE TABLE IF NOT EXISTS users (display_name TEXT, system_name TEXT, password TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
     conn.execute('CREATE TABLE IF NOT EXISTS wg_users (display_name TEXT, system_name TEXT, pub_key TEXT, ip_address TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
+    conn.execute('CREATE TABLE IF NOT EXISTS xray_users (display_name TEXT, system_name TEXT, uuid TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
     conn.execute('CREATE TABLE IF NOT EXISTS warp (is_installed INTEGER DEFAULT 0)')
     
     cursor = conn.cursor()
@@ -82,6 +89,10 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM settings WHERE server_name='wireguard'")
     if cursor.fetchone()[0] == 0:
         conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed) VALUES ('wireguard', 'udp', 51820, '8.8.8.8', '8.8.4.4', '1', 5000, 0)")
+        
+    cursor.execute("SELECT COUNT(*) FROM settings WHERE server_name='xray'")
+    if cursor.fetchone()[0] == 0:
+        conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, sni) VALUES ('xray', 'tcp', 443, '8.8.8.8', '8.8.4.4', 'unlimited', 5000, 0, 'www.microsoft.com')")
         
     cursor.execute("SELECT COUNT(*) FROM warp")
     if cursor.fetchone()[0] == 0:
@@ -164,7 +175,10 @@ def wizard():
         install_warp = request.form.get('install_warp') == 'on'
         install_openvpn = request.form.get('install_openvpn') == 'on'
         install_wireguard = request.form.get('install_wireguard') == 'on'
+        install_xray = request.form.get('install_xray') == 'on'
         wg_port = int(request.form.get('wg_port', 51820))
+        xray_port = int(request.form.get('xray_port', 443))
+        xray_sni = request.form.get('xray_sni', 'www.microsoft.com')
         warp_target = request.form.get('warp_target', '3')
         warp_license = request.form.get('warp_license', 'free')
 
@@ -180,12 +194,15 @@ def wizard():
         
         ovpn_status = -1 if install_openvpn else 0
         wg_status = -1 if install_wireguard else 0
+        xray_status = -1 if install_xray else 0
         warp_status = -1 if install_warp else 0 
         
-        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-                    ('openvpn', server_name, selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, ovpn_status, public_ip))
-        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-                    ('wireguard', server_name, 'udp', wg_port, dns1, dns2, conn_limit, panel_port, wg_status, public_ip))
+        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip, sni) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('openvpn', server_name, selected_protocol, selected_port, dns1, dns2, conn_limit, panel_port, ovpn_status, public_ip, ''))
+        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip, sni) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('wireguard', server_name, 'udp', wg_port, dns1, dns2, conn_limit, panel_port, wg_status, public_ip, ''))
+        conn.execute('INSERT INTO settings (server_name, display_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, public_ip, sni) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                    ('xray', server_name, 'tcp', xray_port, dns1, dns2, conn_limit, panel_port, xray_status, public_ip, xray_sni))
         
         conn.execute('DELETE FROM warp')
         conn.execute('INSERT INTO warp (is_installed) VALUES (?)', (warp_status,))
@@ -501,6 +518,185 @@ def get_warp_trace():
     w4_stat, w4_ip = parse(trace_v4)
     w6_stat, w6_ip = parse(trace_v6)
     return {"v4_vps": vps_v4, "v4_warp": w4_ip, "v4_status": w4_stat, "v6_vps": vps_v6, "v6_warp": w6_ip, "v6_status": w6_stat}
+
+@app.route('/xray', methods=['GET', 'POST'])
+def xray_dashboard():
+    if 'admin_logged_in' not in session: return redirect(url_for('login'))
+    conn = get_db()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add_user':
+            disp_name = request.form.get('new_user')
+            sys_name = re.sub(r'[^a-zA-Z0-9]', '_', disp_name).lower()
+            exp = int(request.form.get('exp_days', 0))
+            ts = 0 if exp == 0 else int(time.time()) + (exp * 86400)
+            user_uuid = str(uuid.uuid4())
+            
+            if not conn.execute('SELECT 1 FROM xray_users WHERE system_name = ?', (sys_name,)).fetchone():
+                conn.execute('INSERT INTO xray_users (display_name, system_name, uuid, exp_days, status, rx, tx) VALUES (?, ?, ?, ?, ?, 0, 0)', (disp_name, sys_name, user_uuid, ts, 'active'))
+                conn.commit()
+                subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/add_user.sh', sys_name, user_uuid], check=False)
+                
+        elif action == 'update_settings':
+            new_port = int(request.form.get('xray_port', 443))
+            new_sni = request.form.get('xray_sni', 'www.microsoft.com')
+            conn.execute("UPDATE settings SET port=?, sni=? WHERE server_name='xray'", (new_port, new_sni))
+            conn.commit()
+            # If installed, need to re-run setup to apply new port/sni
+            settings = conn.execute("SELECT is_installed FROM settings WHERE server_name='xray'").fetchone()
+            if settings and settings['is_installed'] == 1:
+                subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/core_setup.sh'], check=False)
+                
+        return redirect(url_for('xray_dashboard'))
+
+    users = conn.execute('SELECT * FROM xray_users').fetchall()
+    settings = conn.execute("SELECT * FROM settings WHERE server_name='xray'").fetchone()
+    conn.close()
+    
+    if settings is None:
+        settings = {'is_installed': 0}
+        
+    return render_template('xray.html', users=users, settings=settings, current_time=int(time.time()))
+
+def run_xray_task(port, sni):
+    log_file = '/tmp/system_task.log'
+    with open(log_file, 'w') as f:
+        process = subprocess.Popen(
+            ['bash', f'{APP_DIR}/vpn-scripts/xray/core_setup.sh'],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
+        for line in iter(process.stdout.readline, ''):
+            f.write(ansi_to_html(line))
+            f.flush()
+        process.wait()
+        
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='xray'")
+        conn.commit(); conn.close()
+        f.write(f"\n[DONE]\n")
+
+@app.route('/api/xray_stream')
+def xray_stream():
+    if 'admin_logged_in' not in session: return {"error": "unauthorized"}, 401
+    action = request.args.get('action')
+    port = request.args.get('port')
+    sni = request.args.get('sni')
+    
+    conn = get_db()
+    conn.execute("UPDATE settings SET port=?, sni=? WHERE server_name='xray'", (port, sni))
+    conn.commit(); conn.close()
+    
+    open('/tmp/system_task.log', 'w').close()
+    t = threading.Thread(target=run_xray_task, args=(port, sni))
+    t.start()
+    return {"status": "started"}
+
+@app.route('/xray/toggle/<sys_name>')
+def xray_toggle(sys_name):
+    if 'admin_logged_in' not in session: return redirect(url_for('login'))
+    conn = get_db()
+    u = conn.execute('SELECT status, uuid FROM xray_users WHERE system_name=?', (sys_name,)).fetchone()
+    if u:
+        new_status = 'paused' if u['status'] == 'active' else 'active'
+        conn.execute('UPDATE xray_users SET status=? WHERE system_name=?', (new_status, sys_name))
+        conn.commit()
+        if new_status == 'paused':
+            subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/remove_user.sh', sys_name, u['uuid']], check=False)
+        else:
+            subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/add_user.sh', sys_name, u['uuid']], check=False)
+    conn.close()
+    return redirect(url_for('xray_dashboard'))
+
+@app.route('/xray/revoke/<sys_name>')
+def xray_revoke(sys_name):
+    if 'admin_logged_in' not in session: return redirect(url_for('login'))
+    conn = get_db()
+    u = conn.execute('SELECT uuid FROM xray_users WHERE system_name=?', (sys_name,)).fetchone()
+    if u:
+        subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/remove_user.sh', sys_name, u['uuid']], check=False)
+        conn.execute('DELETE FROM xray_users WHERE system_name=?', (sys_name,))
+        conn.commit()
+    conn.close()
+    return redirect(url_for('xray_dashboard'))
+
+@app.route('/sub/xray/<sys_name>')
+def xray_subscription(sys_name):
+    conn = get_db()
+    u = conn.execute('SELECT uuid, status FROM xray_users WHERE system_name=?', (sys_name,)).fetchone()
+    settings = conn.execute("SELECT port, sni, public_ip FROM settings WHERE server_name='xray'").fetchone()
+    conn.close()
+    
+    if not u or u['status'] != 'active':
+        return Response("User not found or inactive", status=404)
+        
+    uuid_str = u['uuid']
+    ip = settings['public_ip']
+    port = settings['port']
+    sni = settings['sni']
+    
+    # Generate Xray VLESS Links
+    # Note: pbk and sid are generated by the core_setup script and saved in /etc/xray/reality.json
+    try:
+        import json
+        with open('/etc/xray/reality.json', 'r') as f:
+            reality_data = json.load(f)
+            pbk = reality_data.get('pbk', '')
+            sid = reality_data.get('sid', '')
+    except Exception:
+        pbk = "MISSING_PBK"
+        sid = "MISSING_SID"
+
+    # TCP REALITY
+    vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
+    # xHTTP REALITY (assuming same port/keys, different type)
+    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
+    
+    # Hysteria 2 (Assuming default port 443 UDP, password is uuid)
+    hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&insecure=1#{sys_name}-Hysteria2"
+    
+    sub_text = f"{vless_tcp}\n{vless_xhttp}\n{hysteria_uri}\n"
+    encoded = base64.b64encode(sub_text.encode('utf-8')).decode('utf-8')
+    
+    return Response(encoded, mimetype='text/plain')
+
+@app.route('/api/user_configs/xray/<sys_name>')
+def get_xray_configs(sys_name):
+    if 'admin_logged_in' not in session: return {"error": "unauthorized"}, 401
+    conn = get_db()
+    u = conn.execute('SELECT uuid, status FROM xray_users WHERE system_name=?', (sys_name,)).fetchone()
+    settings = conn.execute("SELECT port, sni, public_ip FROM settings WHERE server_name='xray'").fetchone()
+    conn.close()
+    
+    if not u: return {"error": "User not found"}, 404
+        
+    uuid_str = u['uuid']
+    ip = settings['public_ip']
+    port = settings['port']
+    sni = settings['sni']
+    
+    try:
+        import json
+        with open('/etc/xray/reality.json', 'r') as f:
+            reality_data = json.load(f)
+            pbk = reality_data.get('pbk', '')
+            sid = reality_data.get('sid', '')
+    except Exception:
+        pbk = "MISSING_PBK"
+        sid = "MISSING_SID"
+
+    vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
+    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
+    hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&insecure=1#{sys_name}-Hysteria2"
+    sub_url = f"http://{request.host}/sub/xray/{sys_name}"
+    
+    return jsonify({
+        "vless_tcp": vless_tcp,
+        "vless_xhttp": vless_xhttp,
+        "hysteria": hysteria_uri,
+        "sub_link": sub_url
+    })
 
 @app.route('/warp')
 def warp_dashboard():

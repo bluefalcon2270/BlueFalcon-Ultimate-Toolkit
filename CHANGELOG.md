@@ -1,6 +1,14 @@
-VERSION="4.8"
+VERSION="4.9"
 
 # Changelog
+
+## [v4.9] - 2026-06-30
+### Added
+- **Xray & Hysteria 2 Integration**: Added a new "Xray & Proxies" module with support for VLESS (TCP & xHTTP transport) + REALITY and Hysteria 2.
+- **Dedicated User Management**: Separate user database for advanced proxies to keep standard VPN clients (OpenVPN/WireGuard) isolated from proxy clients.
+- **QR Code & Subscription**: Added an automated subscription URI generation system (`/sub/xray/...`) that provisions all protocols with one click.
+- **Modernized UI**: Refactored the WireGuard interface to use full-width stacked layouts, maintaining consistency with the OpenVPN tab.
+
 
 ## [v4.8] - 2026-06-30
 ### Fixed

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <title>Setup | BlueFalcon</title>
@@ -137,6 +137,30 @@
                         <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Network Architecture</label><select name="warp_target" class="input-field"><option value="3">Dual-Stack</option><option value="1">IPv4 Only</option><option value="2">IPv6 Only</option></select></div>
                         <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">License Key</label><input type="text" name="warp_license" placeholder="Optional" class="input-field"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Box 5: Xray & Proxies -->
+            <div class="material-card">
+                <div class="box-header" onclick="document.getElementById('xray_toggle').click();">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-[#A8C7FA]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5L4.5 7 12 4.5l7.5 2.5-7.5 2.5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" fill="none"/></svg>
+                            Xray & Advanced Proxies
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-1">Deploy VLESS REALITY, xHTTP, and Hysteria 2 for maximum evasion.</p>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation();">
+                        <input type="checkbox" name="install_xray" id="xray_toggle" onchange="toggleBox(this, 'xray_body')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="box-body" id="xray_body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Primary Port (TCP)</label><input type="number" name="xray_port" value="443" class="input-field"></div>
+                        <div><label class="block text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">REALITY Target (SNI)</label><input type="text" name="xray_sni" value="www.microsoft.com" class="input-field"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4">Note: Hysteria 2 will automatically be deployed on UDP port 443.</p>
                 </div>
             </div>
 
