@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}OpenVPN Engine | BlueFalcon{% endblock %}
 {% block header_title %}OpenVPN Engine{% endblock %}
 
@@ -11,6 +11,10 @@
         <div class="text-xl font-bold tracking-wide">Protocol: <span class="text-white">{{ settings['protocol'] | upper }}</span></div>
         <div class="text-xl font-bold tracking-wide">Port: <span class="text-white">{{ settings['port'] }}</span></div>
         <div class="text-xl font-bold tracking-wide">Max Users: <span class="text-white">{% if settings['conn_limit'] == '1' %}Limited (1){% else %}Unlimited{% endif %}</span></div>
+        <button onclick="document.getElementById('ovpnSettingsModal').classList.remove('hidden')" class="bg-transparent border border-[#A8C7FA] hover:bg-[#A8C7FA] text-[#A8C7FA] hover:text-[#0B2559] px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-lg flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            Settings
+        </button>
     </div>
 
     <!-- Add New User Form -->
@@ -85,6 +89,57 @@
     </div>
 </div>
 
+<!-- OpenVPN Settings Modal -->
+<div id="ovpnSettingsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-[#111113] border border-[#2C2C2E] rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-[#A8C7FA]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0..."></path></svg>
+            OpenVPN Settings
+        </h3>
+        <form id="ovpnSettingsForm" onsubmit="saveOvpnSettings(event)">
+            <div class="space-y-4">
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Protocol</label>
+                        <select name="ovpn_proto" class="w-full px-4 py-2 bg-[#1A1A1C] border border-[#2C2C2E] rounded-lg text-white text-sm outline-none focus:border-[#A8C7FA]">
+                            <option value="udp" {% if settings['protocol'] == 'udp' %}selected{% endif %}>UDP</option>
+                            <option value="tcp" {% if settings['protocol'] == 'tcp' %}selected{% endif %}>TCP</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-semibold text-gray-400 mb-1">Listening Port</label>
+                        <input type="number" name="ovpn_port" value="{{ settings['port'] }}" class="w-full px-4 py-2 bg-[#1A1A1C] border border-[#2C2C2E] rounded-lg text-white text-sm outline-none focus:border-[#A8C7FA]" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Primary DNS</label>
+                    <input type="text" name="ovpn_dns1" value="{{ settings['dns'] }}" class="w-full px-4 py-2 bg-[#1A1A1C] border border-[#2C2C2E] rounded-lg text-white text-sm outline-none focus:border-[#A8C7FA]" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Secondary DNS</label>
+                    <input type="text" name="ovpn_dns2" value="{{ settings['dns2'] }}" class="w-full px-4 py-2 bg-[#1A1A1C] border border-[#2C2C2E] rounded-lg text-white text-sm outline-none focus:border-[#A8C7FA]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">Connection Limit</label>
+                    <select name="ovpn_conn_limit" class="w-full px-4 py-2 bg-[#1A1A1C] border border-[#2C2C2E] rounded-lg text-white text-sm outline-none focus:border-[#A8C7FA]">
+                        <option value="1" {% if settings['conn_limit'] == '1' %}selected{% endif %}>Limit to 1 concurrent connection per user</option>
+                        <option value="unlimited" {% if settings['conn_limit'] == 'unlimited' %}selected{% endif %}>Unlimited concurrent connections</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1">MTU (Maximum Transmission Unit)</label>
+                    <input type="number" name="ovpn_mtu" value="{{ settings['mtu'] }}" class="w-full px-4 py-2 bg-[#1A1A1C] border border-[#2C2C2E] rounded-lg text-white text-sm outline-none focus:border-[#A8C7FA]" required>
+                    <p class="text-[10px] text-gray-500 mt-1">Default is 1500. Lower to 1300 if clients experience stalling connections.</p>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('ovpnSettingsModal').classList.add('hidden')" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors">Cancel</button>
+                <button type="submit" id="saveOvpnSettingsBtn" class="bg-[#0B57D0] hover:bg-[#0842A0] text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors shadow-lg">Save & Restart</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% else %}
 <!-- OpenVPN NOT Installed — WARP-style layout -->
 <div class="max-w-5xl space-y-6">
@@ -98,16 +153,21 @@
                         <option value="tcp">TCP</option>
                     </select>
                 </div>
-                <div class="flex-1 min-w-[120px]">
+                <div class="flex-1 min-w-[80px]">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Port</label>
                     <input type="number" name="port" value="1194" required class="w-full px-4 py-2.5 bg-[#1F1F22] border border-[#2C2C2E] rounded-xl focus:border-[#A8C7FA] outline-none text-sm text-gray-200 font-mono transition-all">
                 </div>
-                <div class="flex-1 min-w-[180px]">
-                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">DNS Resolver</label>
-                    <select name="dns_preset" class="w-full px-4 py-2.5 bg-[#1F1F22] border border-[#2C2C2E] rounded-xl focus:border-[#A8C7FA] outline-none text-sm text-gray-200 transition-all">
-                        <option value="1.1.1.1">Cloudflare (1.1.1.1)</option>
-                        <option value="8.8.8.8">Google (8.8.8.8)</option>
-                    </select>
+                <div class="flex-1 min-w-[120px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Primary DNS</label>
+                    <input type="text" name="ovpn_dns1" value="8.8.8.8" class="w-full px-4 py-2.5 bg-[#1F1F22] border border-[#2C2C2E] rounded-xl focus:border-[#A8C7FA] focus:ring-1 focus:ring-[#A8C7FA] outline-none text-sm text-gray-200 transition-all" required>
+                </div>
+                <div class="flex-1 min-w-[120px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Secondary DNS</label>
+                    <input type="text" name="ovpn_dns2" value="8.8.4.4" class="w-full px-4 py-2.5 bg-[#1F1F22] border border-[#2C2C2E] rounded-xl focus:border-[#A8C7FA] focus:ring-1 focus:ring-[#A8C7FA] outline-none text-sm text-gray-200 transition-all">
+                </div>
+                <div class="flex-1 min-w-[80px]">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">MTU</label>
+                    <input type="number" name="ovpn_mtu" value="1500" class="w-full px-4 py-2.5 bg-[#1F1F22] border border-[#2C2C2E] rounded-xl focus:border-[#A8C7FA] focus:ring-1 focus:ring-[#A8C7FA] outline-none text-sm text-gray-200 transition-all" required>
                 </div>
                 <button type="submit" class="bg-[#0B57D0] hover:bg-[#0842A0] text-white font-bold px-8 py-2.5 rounded-xl transition shadow-sm text-sm h-[42px] whitespace-nowrap">Install OpenVPN</button>
             </form>
@@ -192,7 +252,23 @@
                     document.getElementById('ovpnLogOutput').innerHTML = data.log;
                 }
             });
-    });
+    }
+
+    function saveOvpnSettings(event) {
+        event.preventDefault();
+        const btn = document.getElementById('saveOvpnSettingsBtn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        
+        const fd = new FormData(document.getElementById('ovpnSettingsForm'));
+        fetch('/api/ovpn_settings', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') window.location.reload();
+                else { alert(data.message || 'Error saving settings'); btn.disabled = false; btn.textContent = 'Save & Restart'; }
+            });
+    }
 </script>
 {% endif %}
+{% endblock %}
 {% endblock %}

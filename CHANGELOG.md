@@ -1,6 +1,15 @@
-VERSION="4.9"
+VERSION="5.0"
 
 # Changelog
+
+## [v5.0] - 2026-07-01
+### Added
+- **Protocol-Specific Settings**: Deprecated the centralized "VPN Network Parameters" in the Preferences tab. All protocol settings (Port, DNS, MTU) are now dynamically managed inside their respective OpenVPN and WireGuard tabs via real-time modals.
+- **Advanced WireGuard Customization**: Added the ability to modify Port, Primary DNS, Secondary DNS, and MTU for WireGuard both during the initial installation wizard and post-installation via the new Settings modal.
+- **Database Schema Update**: Added `mtu` column to the `settings` SQLite table to track connection packet sizes natively.
+
+### Fixed
+- **WireGuard Internal Server Error**: Fixed a critical 500 Internal Server Error when creating a new WireGuard client, caused by the UI template attempting to calculate expiration dates without a `current_time` variable passed from the Python backend.
 
 ## [v4.9] - 2026-06-30
 ### Changed
