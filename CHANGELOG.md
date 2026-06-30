@@ -1,6 +1,10 @@
-VERSION="4.8"
+VERSION="4.9"
 
 # Changelog
+
+## [v4.9] - 2026-06-30
+### Changed
+- **WireGuard UI Overhaul**: Ripped out the grid/dashboard layout on the WireGuard panel and replaced it with the vertically-stacked, full-width UI used by the OpenVPN panel for a more cohesive design experience across protocols.
 
 ## [v4.8] - 2026-06-30
 ### Fixed
