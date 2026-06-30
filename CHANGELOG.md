@@ -1,6 +1,12 @@
-VERSION="4.5"
+VERSION="4.6"
 
 # Changelog
+
+## [v4.6] - 2026-06-30
+### Fixed
+- **True VPS IPv6 Detection**: Fixed an issue where the True VPS IPv6 address displayed as `N/A` on the WARP dashboard. The detection logic now strictly queries the `main` routing table rather than globally, preventing WARP's virtual interface from blinding the server to its native public interface.
+- **Login Page UI Refinement**: Updated the login screen aesthetics for better clarity. Modified titles and properly contrasted the error banner using Tailwind classes (`bg-red-900/50 text-red-200`) so "Invalid Credentials" warnings are readable in dark mode. Also fixed a bug where the error banner displayed unconditionally on fresh page loads.
+- **Bootstrapper Speed**: Added verbose logging to `install.sh` so the initial deployment no longer appears to hang while fetching core dependencies (`git`, `curl`, `wget`) on a fresh Ubuntu machine.
 
 ## [v4.5] - 2026-06-30
 ### Fixed

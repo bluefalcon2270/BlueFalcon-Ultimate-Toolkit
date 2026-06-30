@@ -18,17 +18,16 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-6">
     <div class="w-full max-w-md material-card p-10 text-center">
-        <h1 class="text-3xl font-bold mb-2 tracking-tight">BlueFalcon</h1>
-        <p class="mb-8 font-medium">Sign in to manage your node</p>
+        <h1 class="text-3xl font-bold mb-8 tracking-tight">Log in To BlueFalcon Panel</h1>
         
         {% if error %}
-            <div class="bg-[#FCE8E6] px-4 py-3 rounded-xl text-sm font-medium mb-6">{{ error }}</div>
+            <div class="bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 rounded-xl text-sm font-medium mb-6">{{ error }}</div>
         {% endif %}
         
         <form action="/login" method="POST" class="space-y-5 text-left">
             <div><input type="text" name="username" placeholder="Username" required class="input-field"></div>
             <div><input type="password" name="password" placeholder="Password" required class="input-field"></div>
-            <button type="submit" class="w-full bg-[#0B57D0] hover:bg-[#0842A0] py-3.5 rounded-xl shadow-sm transition text-lg mt-2">Sign In</button>
+            <button type="submit" class="w-full bg-[#0B57D0] hover:bg-[#0842A0] py-3.5 rounded-xl shadow-sm transition text-lg mt-2 font-semibold">Log In</button>
         </form>
     </div>
 </body>

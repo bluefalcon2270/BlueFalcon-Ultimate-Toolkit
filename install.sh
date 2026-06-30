@@ -8,6 +8,7 @@ BF_VERSION="v$(curl -s https://raw.githubusercontent.com/bluefalcon2270/bluefalc
 echo "🦅 Initializing BlueFalcon Ultimate Toolkit (${BF_VERSION:-latest})..."
 
 # 1. Silently install dependencies
+echo "📦 Updating package lists and installing core dependencies (this might take a minute)..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y > /dev/null 2>&1
 apt-get install git curl wget -y > /dev/null 2>&1

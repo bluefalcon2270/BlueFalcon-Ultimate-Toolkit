@@ -268,6 +268,7 @@ def install_execute():
 # --- Login & Dashboards ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
         conn = get_db()
         admin = conn.execute('SELECT * FROM admin WHERE username = ? AND password = ?', (request.form['username'], request.form['password'])).fetchone()
@@ -275,8 +276,9 @@ def login():
         if admin:
             session['admin_logged_in'] = True
             return redirect(url_for('dashboard'))
+        error = "Invalid Credentials"
             
-    return render_template('login.html', error="Invalid Credentials")
+    return render_template('login.html', error=error)
 
 @app.route('/logout')
 def logout():
@@ -481,8 +483,10 @@ def get_wg_qr(username):
 
 # --- WARP Routing ---
 def get_warp_trace():
-    vps_v4 = os.popen("ip -4 addr show $(ip route | awk '/default/ {print $5}' | head -1) 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -1").read().strip() or "N/A"
-    vps_v6 = os.popen("ip -6 addr show $(ip route | awk '/default/ {print $5}' | head -1) 2>/dev/null | awk '/inet6 / {print $2}' | cut -d/ -f1 | grep -v '^fe80' | head -1").read().strip() or "N/A"
+    primary_if = os.popen("ip route show table main | awk '/default/ {print $5}' | head -1").read().strip()
+    if not primary_if: primary_if = "eth0"
+    vps_v4 = os.popen(f"ip -4 addr show {primary_if} 2>/dev/null | awk '/inet / {{print $2}}' | cut -d/ -f1 | head -1").read().strip() or "N/A"
+    vps_v6 = os.popen(f"ip -6 addr show {primary_if} 2>/dev/null | awk '/inet6 / {{print $2}}' | cut -d/ -f1 | grep -v '^fe80' | head -1").read().strip() or "N/A"
     
     trace_v4 = os.popen("curl -s4 https://www.cloudflare.com/cdn-cgi/trace --connect-timeout 3 --max-time 5").read()
     trace_v6 = os.popen("curl -s6 https://www.cloudflare.com/cdn-cgi/trace --connect-timeout 3 --max-time 5").read()
