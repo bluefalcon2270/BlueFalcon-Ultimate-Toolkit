@@ -1,6 +1,11 @@
-VERSION="5.0"
+VERSION="5.1"
 
 # Changelog
+
+## [v5.1] - 2026-07-01
+### Fixed
+- **OpenVPN & WireGuard 500 Internal Server Errors**: Fixed crashes when clicking on the protocol tabs caused by SQLite `IndexError` throwing exceptions in the Jinja templates. This occurred due to newly added schema columns (like `mtu`) missing from existing DB rows. Fixed by casting SQL rows to native Python dictionaries and implementing safe dictionary `.get()` fallback methods.
+- **WireGuard QR Code Generation**: Fixed QR codes failing to display or returning 404 errors due to `qrencode` parameter incompatibilities (`-r`) across different Ubuntu versions. Moved to using safe Bash input redirection `<` instead.
 
 ## [v5.0] - 2026-07-01
 ### Added

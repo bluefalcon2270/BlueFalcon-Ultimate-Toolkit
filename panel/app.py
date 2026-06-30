@@ -333,11 +333,14 @@ def openvpn_dashboard():
         return redirect(url_for('openvpn_dashboard'))
 
     users = conn.execute('SELECT * FROM users').fetchall()
-    settings = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
+    settings_row = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
     conn.close()
     
-    if settings is None:
+    if settings_row is None:
         settings = {'is_installed': 0}
+    else:
+        settings = dict(settings_row)
+        if 'mtu' not in settings: settings['mtu'] = 1500
     
     live_traffic, _, _ = get_traffic()
     user_stats = {}
@@ -474,8 +477,9 @@ def wireguard():
     wg_port_row = conn.execute("SELECT port FROM settings WHERE server_name='wireguard'").fetchone()
     wg_port = wg_port_row[0] if wg_port_row else 51820
     
-    settings_row = conn.execute("SELECT dns, dns2, mtu FROM settings WHERE server_name='wireguard'").fetchone()
-    wg_settings = dict(settings_row) if settings_row else {'dns': '8.8.8.8', 'dns2': '8.8.4.4', 'mtu': 1420}
+    settings_row = conn.execute("SELECT * FROM settings WHERE server_name='wireguard'").fetchone()
+    wg_settings = dict(settings_row) if settings_row else {'dns': '8.8.8.8', 'dns2': '8.8.4.4', 'mtu': 1420, 'port': 51820}
+    if 'mtu' not in wg_settings or wg_settings['mtu'] is None: wg_settings['mtu'] = 1420
     
     users_data = []
     if is_installed:
@@ -592,7 +596,7 @@ def get_wg_qr(username):
     if 'admin_logged_in' not in session: return "Unauthorized", 401
     conf_path = f"/etc/wireguard/clients/{username}.conf"
     if os.path.exists(conf_path):
-        process = subprocess.run(['qrencode', '-t', 'SVG', '-r', conf_path], capture_output=True, text=True)
+        process = subprocess.run(f"qrencode -t SVG < '{conf_path}'", shell=True, capture_output=True, text=True)
         if process.returncode == 0:
             return process.stdout, 200, {'Content-Type': 'image/svg+xml'}
     return "QR Code generation failed.", 404
