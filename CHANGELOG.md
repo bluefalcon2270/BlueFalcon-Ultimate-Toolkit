@@ -1,6 +1,11 @@
-VERSION="5.0"
+VERSION="5.1"
 
 # Changelog
+
+## [v5.1] - 2026-06-30
+### Fixed
+- **Xray REALITY Key Generation**: Fixed a critical bug where `pbk` keys generated with ANSI color codes would break the Xray config and crash V2rayN/v2rayNG clients with "PublicKey property is invalid".
+- **Hysteria 2 TLS Pinning**: Migrated away from `allowInsecure` to explicit `pinSHA256` certificate fingerprinting to resolve the "allowInsecure has been removed" Xray-core crash inside v2rayN and eliminate MITM warnings.
 
 ## [v5.0] - 2026-06-30
 ### Fixed

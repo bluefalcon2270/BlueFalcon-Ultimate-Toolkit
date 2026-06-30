@@ -26,9 +26,10 @@ mkdir -p /etc/xray
 
 # Generate REALITY Keys
 echo "  -> Generating x25519 Keys for REALITY..."
-xray x25519 > /tmp/xray_keys.txt
-PRV_KEY=$(grep "Private key" /tmp/xray_keys.txt | awk '{print $3}')
-PUB_KEY=$(grep "Public key" /tmp/xray_keys.txt | awk '{print $3}')
+XRAY_BIN=$(command -v xray || echo /usr/local/bin/xray)
+$XRAY_BIN x25519 > /tmp/xray_keys.txt
+PRV_KEY=$(grep -i "Private key" /tmp/xray_keys.txt | awk '{print $3}' | tr -d '\033' | sed 's/\[[0-9;]*[a-zA-Z]//g')
+PUB_KEY=$(grep -i "Public key" /tmp/xray_keys.txt | awk '{print $3}' | tr -d '\033' | sed 's/\[[0-9;]*[a-zA-Z]//g')
 SHORT_ID=$(openssl rand -hex 8)
 
 # Save keys for Python backend to read when generating Sub Links
@@ -114,6 +115,9 @@ mkdir -p /etc/hysteria
 echo "  -> Writing Hysteria config.yaml..."
 # Hysteria requires a certificate. We use self-signed for stealth against active probing (with obfuscation)
 openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/hysteria/server.key -out /etc/hysteria/server.crt -days 3650 -subj "/CN=${XRAY_SNI}" > /dev/null 2>&1
+
+# Generate the SHA256 pin for clients to avoid "insecure" MITM warnings
+openssl x509 -noout -fingerprint -sha256 -in /etc/hysteria/server.crt | awk -F= '{gsub(/:/, "", $2); print tolower($2)}' > /etc/hysteria/cert_pin.txt
 
 cat <<EOF > /etc/hysteria/config.yaml
 listen: :443
