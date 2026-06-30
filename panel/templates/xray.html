@@ -8,10 +8,12 @@
 
     <!-- Top Settings Banner -->
     <div class="bg-gradient-to-r from-[#1A2B4C] to-[#0B2559] rounded-2xl p-8 shadow-lg border border-[#2A3B6C] flex justify-between items-center text-[#A8C7FA] flex-wrap gap-4">
-        <div class="text-xl font-bold tracking-wide">Xray Port: <span class="text-white">{{ settings['port'] }}</span></div>
-        <div class="text-xl font-bold tracking-wide">Hysteria Port: <span class="text-white">443 (UDP)</span></div>
-        <div class="text-xl font-bold tracking-wide">REALITY Target: <span class="text-white">{{ settings['sni'] }}</span></div>
-        <button onclick="document.getElementById('settingsModal').classList.remove('hidden')" class="bg-[#1F1F22] hover:bg-[#2C2C2E] border border-[#3A3A3C] text-gray-200 px-4 py-2 rounded-xl text-sm font-bold transition-colors">Edit Settings</button>
+        <div class="text-xl font-bold tracking-wide">3x-ui Backend: <span class="text-green-400">Online</span></div>
+        <div class="text-xl font-bold tracking-wide">Panel Port: <span class="text-white">{{ xui_port }}</span></div>
+        <a href="http://{{ request.host.split(':')[0] }}:{{ xui_port }}" target="_blank" class="bg-[#0B57D0] hover:bg-[#0842A0] border border-[#0B57D0] text-white px-6 py-2 rounded-xl text-sm font-bold transition-colors shadow-lg flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+            Open Advanced 3x-ui Panel
+        </a>
     </div>
 
     <!-- Add New User Form -->

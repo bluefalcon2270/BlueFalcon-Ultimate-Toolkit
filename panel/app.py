@@ -1,6 +1,7 @@
 # /opt/bluefalcon-ultimate-toolkit/panel/app.py
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, Response, jsonify
 import sqlite3, os, time, subprocess, re, psutil, threading, uuid, base64
+import xui_api
 
 app = Flask(__name__)
 app.secret_key = 'BlueFalcon_Enterprise_Secret_Key_2026'
@@ -555,7 +556,7 @@ def xray_dashboard():
             if not conn.execute('SELECT 1 FROM xray_users WHERE system_name = ?', (sys_name,)).fetchone():
                 conn.execute('INSERT INTO xray_users (display_name, system_name, uuid, exp_days, status, rx, tx) VALUES (?, ?, ?, ?, ?, 0, 0)', (disp_name, sys_name, user_uuid, ts, 'active'))
                 conn.commit()
-                subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/add_user.sh', sys_name, user_uuid], check=False)
+                xui_api.add_client(sys_name, user_uuid)
                 
         elif action == 'update_settings':
             new_port = int(request.form.get('xray_port', 443))
@@ -576,7 +577,7 @@ def xray_dashboard():
     if settings is None:
         settings = {'is_installed': 0}
         
-    return render_template('xray.html', users=users, settings=settings, current_time=int(time.time()))
+    return render_template('xray.html', users=users, settings=settings, current_time=int(time.time()), xui_port=2053)
 
 def run_xray_task(port, sni):
     log_file = '/tmp/system_task.log'
@@ -621,9 +622,9 @@ def xray_toggle(sys_name):
         conn.execute('UPDATE xray_users SET status=? WHERE system_name=?', (new_status, sys_name))
         conn.commit()
         if new_status == 'paused':
-            subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/remove_user.sh', sys_name, u['uuid']], check=False)
+            xui_api.remove_client(u['uuid'])
         else:
-            subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/add_user.sh', sys_name, u['uuid']], check=False)
+            xui_api.add_client(sys_name, u['uuid'])
     conn.close()
     return redirect(url_for('xray_dashboard'))
 
@@ -633,7 +634,7 @@ def xray_revoke(sys_name):
     conn = get_db()
     u = conn.execute('SELECT uuid FROM xray_users WHERE system_name=?', (sys_name,)).fetchone()
     if u:
-        subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/xray/remove_user.sh', sys_name, u['uuid']], check=False)
+        xui_api.remove_client(u['uuid'])
         conn.execute('DELETE FROM xray_users WHERE system_name=?', (sys_name,))
         conn.commit()
     conn.close()
@@ -683,9 +684,22 @@ def xray_subscription(sys_name):
         hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
     
     vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
+    
+    client_info = xui_api.get_client_uri(sys_name)
+    if not client_info:
+        return Response("User not configured", status=404)
+        
+    port = client_info['port']
+    stream = client_info['stream']
+    
+    pbk = stream['realitySettings'].get('publicKey', '')
+    sid = stream['realitySettings']['shortIds'][0] if stream['realitySettings'].get('shortIds') else ''
+    sni = stream['realitySettings']['serverNames'][0] if stream['realitySettings'].get('serverNames') else 'yahoo.com'
+
+    vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
     vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
     
-    sub_text = f"{vless_tcp}\n{vless_xhttp}\n{hysteria_uri}\n"
+    sub_text = f"{vless_tcp}\n{vless_xhttp}\n"
     encoded = base64.b64encode(sub_text.encode('utf-8')).decode('utf-8')
     
     return Response(encoded, mimetype='text/plain')
@@ -695,47 +709,35 @@ def get_xray_configs(sys_name):
     if 'admin_logged_in' not in session: return {"error": "unauthorized"}, 401
     conn = get_db()
     u = conn.execute('SELECT uuid, status FROM xray_users WHERE system_name=?', (sys_name,)).fetchone()
-    settings = conn.execute("SELECT port, sni, public_ip FROM settings WHERE server_name='xray'").fetchone()
+    settings = conn.execute("SELECT public_ip FROM settings WHERE server_name='xray'").fetchone()
     conn.close()
     
     if not u: return {"error": "User not found"}, 404
         
     uuid_str = u['uuid']
-    ip = settings['public_ip']
-    port = settings['port']
-    sni = settings['sni']
+    ip = settings['public_ip'] if settings else "127.0.0.1"
     
-    try:
-        import json
-        with open('/etc/xray/reality.json', 'r') as f:
-            reality_data = json.load(f)
-            pbk = reality_data.get('pbk', '')
-            sid = reality_data.get('sid', '')
-    except Exception:
-        pbk = "MISSING_PBK"
-        sid = "MISSING_SID"
-
-    try:
-        with open('/etc/hysteria/cert_pin.txt', 'r') as f:
-            hys_pin = f.read().strip()
-    except Exception:
-        hys_pin = ""
-
+    client_info = xui_api.get_client_uri(sys_name)
+    if not client_info:
+        return {"error": "User not fully configured in 3x-ui yet. Please retry."}, 404
+        
+    port = client_info['port']
+    stream = client_info['stream']
+    
+    pbk = stream['realitySettings'].get('publicKey', '')
+    sid = stream['realitySettings']['shortIds'][0] if stream['realitySettings'].get('shortIds') else ''
+    sni = stream['realitySettings']['serverNames'][0] if stream['realitySettings'].get('serverNames') else 'yahoo.com'
+    
     vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
     vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
     
-    if hys_pin:
-        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&pinSHA256={hys_pin}#{sys_name}-Hysteria2"
-    else:
-        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
-        
-    sub_link = f"http://{request.host}/sub/xray/{sys_name}"
+    sub_url = f"http://{request.host}/sub/xray/{sys_name}"
     
     return jsonify({
-        "vless_tcp": vless_tcp,
-        "vless_xhttp": vless_xhttp,
-        "hysteria": hysteria_uri,
-        "sub_link": sub_link
+        'vless_tcp': vless_tcp,
+        'vless_xhttp': vless_xhttp,
+        'hysteria': '',
+        'sub_link': sub_url
     })
 
 @app.route('/warp')

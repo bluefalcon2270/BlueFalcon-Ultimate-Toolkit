@@ -1,6 +1,15 @@
-VERSION="5.3"
+VERSION="5.4"
 
 # Changelog
+
+## [v5.4] - 2026-06-30
+### Added
+- **3x-ui Integration**: Completely migrated the Xray backend to Sanaei's robust `3x-ui` panel for seamless proxy management.
+- **REST API Wrapper**: Integrated `xui_api.py` into the BlueFalcon panel to communicate directly with 3x-ui's API in the background.
+- **Advanced Dashboard**: Added a 1-click shortcut from the Xray tab directly into the native 3x-ui advanced interface.
+### Removed
+- Deprecated manual `reality.json` bash generation scripts to prevent file permission and syntax errors.
+
 
 ## [v5.3] - 2026-06-30
 ### Fixed
