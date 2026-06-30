@@ -513,7 +513,12 @@ def get_proxy_qr():
     if 'admin_logged_in' not in session: return "Unauthorized", 401
     text = request.form.get('text')
     if not text: return "No text provided", 400
-    process = subprocess.run(['qrencode', '-t', 'SVG', '-o', '-'], input=text, capture_output=True, text=True)
+    
+    # Ensure qrencode is installed
+    if not os.path.exists('/usr/bin/qrencode'):
+        os.system('apt-get update -y && apt-get install -y qrencode >/dev/null 2>&1')
+        
+    process = subprocess.run(['qrencode', '-t', 'SVG', '-o', '-', text], capture_output=True, text=True)
     if process.returncode == 0:
         return process.stdout, 200, {'Content-Type': 'image/svg+xml'}
     return "QR Code generation failed.", 500

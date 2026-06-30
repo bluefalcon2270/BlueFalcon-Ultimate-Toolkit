@@ -13,7 +13,7 @@ echo "-----------------------------------------------------"
 echo "  Downloading Core Engines"
 echo "-----------------------------------------------------"
 apt-get update -y > /dev/null 2>&1
-apt-get install -y unzip jq curl > /dev/null 2>&1
+apt-get install -y unzip jq curl qrencode > /dev/null 2>&1
 mkdir -p /usr/local/bin /etc/xray /etc/hysteria /var/log/xray /var/log/hysteria
 
 # Install Xray
