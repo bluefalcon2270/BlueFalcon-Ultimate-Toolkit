@@ -14,7 +14,7 @@ XRAY_PORT=$(sqlite3 ${DB_PATH} "SELECT port FROM settings WHERE server_name='xra
 XRAY_SNI=$(sqlite3 ${DB_PATH} "SELECT sni FROM settings WHERE server_name='xray';")
 
 if [ -z "$XRAY_PORT" ]; then XRAY_PORT=443; fi
-if [ -z "$XRAY_SNI" ]; then XRAY_SNI="www.microsoft.com"; fi
+if [ -z "$XRAY_SNI" ]; then XRAY_SNI="discord.com"; fi
 
 echo "     - Primary Port: ${XRAY_PORT}"
 echo "     - REALITY Target: ${XRAY_SNI}"

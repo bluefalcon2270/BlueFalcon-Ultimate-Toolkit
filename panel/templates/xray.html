@@ -194,13 +194,17 @@
 
     function renderQR() {
         if (!currentConfigs[activeTab]) return;
-        const typeNumber = 0;
-        const errorCorrectionLevel = 'M';
-        const qr = qrcode(typeNumber, errorCorrectionLevel);
-        qr.addData(currentConfigs[activeTab]);
-        qr.make();
-        // Add a quiet zone (margin = 4) so mobile cameras can easily detect the corners!
-        document.getElementById('qrImage').innerHTML = qr.createImgTag(5, 4);
+        try {
+            const typeNumber = 0;
+            const errorCorrectionLevel = 'L'; // Use Low to fit massive VLESS Reality strings
+            const qr = qrcode(typeNumber, errorCorrectionLevel);
+            qr.addData(currentConfigs[activeTab]);
+            qr.make();
+            // Add a quiet zone (margin = 4) so mobile cameras can easily detect the corners!
+            document.getElementById('qrImage').innerHTML = qr.createImgTag(5, 4);
+        } catch (err) {
+            document.getElementById('qrImage').innerHTML = '<div class="text-red-400 text-sm p-4 text-center">Failed to generate QR Code. String too long. Please use the Copy button instead.</div>';
+        }
     }
 
     function copyCurrentUri() {

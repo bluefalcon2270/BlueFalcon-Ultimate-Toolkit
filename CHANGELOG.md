@@ -1,6 +1,13 @@
-VERSION="5.3"
+VERSION="5.4"
 
 # Changelog
+
+## [v5.4] - 2026-06-30
+### Fixed
+- **Native xHTTP Timeout (rtott)**: Fixed an architectural bug where the `xHTTP` script listened on port `8443` but the client was instructed to connect on `443` (TCP). The client string now properly routes to `8443`.
+- **Hysteria 2 Connectivity**: Deprecated the `peer` parameter in the Hysteria 2 connection string and migrated to the strictly enforced `sni` and `pinSHA256` standards for modern v2rayNG clients.
+- **Infinite QR Loading**: Implemented a lower error-correction threshold (`Level L`) in the Javascript QR code generator to ensure extremely long REALITY URIs can be successfully rendered without crashing the browser thread.
+- **Default SNI Target**: Changed the default REALITY destination from `www.microsoft.com` to `discord.com` to reduce aggressive VPS-level read timeouts.
 
 ## [v5.3] - 2026-06-30
 ### Fixed

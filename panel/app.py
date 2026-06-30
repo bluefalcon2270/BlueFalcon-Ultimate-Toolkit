@@ -559,7 +559,7 @@ def xray_dashboard():
                 
         elif action == 'update_settings':
             new_port = int(request.form.get('xray_port', 443))
-            new_sni = request.form.get('xray_sni', 'www.microsoft.com')
+            new_sni = request.form.get('xray_sni', 'discord.com')
             conn.execute("UPDATE settings SET port=?, sni=? WHERE server_name='xray'", (new_port, new_sni))
             conn.commit()
             # If installed, need to re-run setup to apply new port/sni
@@ -668,8 +668,8 @@ def xray_subscription(sys_name):
 
     # TCP REALITY
     vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
-    # xHTTP REALITY (assuming same port/keys, different type)
-    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
+    # xHTTP REALITY on port 8443
+    vless_xhttp = f"vless://{uuid_str}@{ip}:8443?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
     
     try:
         with open('/etc/hysteria/cert_pin.txt', 'r') as f:
@@ -678,12 +678,12 @@ def xray_subscription(sys_name):
         hys_pin = ""
         
     if hys_pin:
-        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&pinSHA256={hys_pin}#{sys_name}-Hysteria2"
+        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&pinSHA256={hys_pin}#{sys_name}-Hysteria2"
     else:
-        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
+        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
     
     vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
-    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
+    vless_xhttp = f"vless://{uuid_str}@{ip}:8443?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
     
     sub_text = f"{vless_tcp}\n{vless_xhttp}\n{hysteria_uri}\n"
     encoded = base64.b64encode(sub_text.encode('utf-8')).decode('utf-8')
@@ -722,12 +722,12 @@ def get_xray_configs(sys_name):
         hys_pin = ""
 
     vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
-    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
+    vless_xhttp = f"vless://{uuid_str}@{ip}:8443?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
     
     if hys_pin:
-        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&pinSHA256={hys_pin}#{sys_name}-Hysteria2"
+        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&pinSHA256={hys_pin}#{sys_name}-Hysteria2"
     else:
-        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
+        hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
         
     sub_link = f"http://{request.host}/sub/xray/{sys_name}"
     
