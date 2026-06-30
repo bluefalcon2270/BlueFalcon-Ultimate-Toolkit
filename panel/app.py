@@ -227,6 +227,8 @@ def install_execute():
         warp_pending = conn.execute('SELECT is_installed FROM warp').fetchone()[0] == -1
         ovpn_pending = conn.execute("SELECT is_installed FROM settings WHERE server_name='openvpn'").fetchone()[0] == -1
         wg_pending = conn.execute("SELECT is_installed FROM settings WHERE server_name='wireguard'").fetchone()[0] == -1
+        xray_pending_row = conn.execute("SELECT is_installed FROM settings WHERE server_name='xray'").fetchone()
+        xray_pending = xray_pending_row[0] == -1 if xray_pending_row else False
         conn.close()
 
         yield "data: 🦅 INITIALIZING BLUEFALCON DEPLOYMENT SEQUENCE\n\n"
@@ -259,6 +261,22 @@ def install_execute():
             
             conn = get_db()
             conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='wireguard'")
+            conn.commit(); conn.close()
+            
+        if xray_pending:
+            yield "data: \n\n"
+            yield "data: [XRAY & PROXIES] Starting Core Configuration...\n\n"
+            conn = get_db()
+            xray_port = conn.execute("SELECT port FROM settings WHERE server_name='xray'").fetchone()[0]
+            xray_sni = conn.execute("SELECT sni FROM settings WHERE server_name='xray'").fetchone()[0]
+            conn.close()
+            
+            process = subprocess.Popen(['bash', f'{APP_DIR}/vpn-scripts/xray/core_setup.sh'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in iter(process.stdout.readline, ''): yield f"data: {line}\n\n"
+            process.stdout.close(); process.wait()
+            
+            conn = get_db()
+            conn.execute("UPDATE settings SET is_installed=1 WHERE server_name='xray'")
             conn.commit(); conn.close()
         
         if warp_pending:
@@ -654,7 +672,7 @@ def xray_subscription(sys_name):
     vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
     
     # Hysteria 2 (Assuming default port 443 UDP, password is uuid)
-    hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&insecure=1#{sys_name}-Hysteria2"
+    hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
     
     sub_text = f"{vless_tcp}\n{vless_xhttp}\n{hysteria_uri}\n"
     encoded = base64.b64encode(sub_text.encode('utf-8')).decode('utf-8')
@@ -688,7 +706,7 @@ def get_xray_configs(sys_name):
 
     vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
     vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
-    hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&insecure=1#{sys_name}-Hysteria2"
+    hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
     sub_url = f"http://{request.host}/sub/xray/{sys_name}"
     
     return jsonify({

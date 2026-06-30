@@ -1,6 +1,12 @@
-VERSION="4.9"
+VERSION="5.0"
 
 # Changelog
+
+## [v5.0] - 2026-06-30
+### Fixed
+- **Wizard Xray Installer**: Fixed a bug where the installation stream would skip the Xray setup process during the initial wizard deployment.
+- **Clipboard Fallback**: Implemented a robust fallback for copying QR links and Subscriptions in non-HTTPS environments where `navigator.clipboard` is restricted.
+- **Hysteria 2 Client Compatibility**: Updated the Hysteria 2 connection URI to include `peer` and `allowInsecure=1` parameters to ensure compatibility with v2rayNG and other mobile clients.
 
 ## [v4.9] - 2026-06-30
 ### Added

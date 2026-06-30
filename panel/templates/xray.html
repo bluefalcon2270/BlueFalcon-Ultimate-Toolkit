@@ -128,11 +128,40 @@
     let currentConfigs = {};
     let activeTab = 'vless_tcp';
 
+    function fallbackCopyTextToClipboard(text, successMsg) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            alert(successMsg);
+        } catch (err) {
+            alert('Fallback copy failed, please copy manually.');
+            prompt("Copy to clipboard: Ctrl+C, Enter", text);
+        }
+        document.body.removeChild(textArea);
+    }
+
+    function copyToClipboard(text, successMsg) {
+        if (!navigator.clipboard) {
+            fallbackCopyTextToClipboard(text, successMsg);
+            return;
+        }
+        navigator.clipboard.writeText(text).then(() => {
+            alert(successMsg);
+        }).catch(() => {
+            fallbackCopyTextToClipboard(text, successMsg);
+        });
+    }
+
     function copySubLink(sysName) {
         const url = window.location.origin + '/sub/xray/' + sysName;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Subscription Link copied to clipboard!\nUse this in v2rayNG/v2rayN to import all configurations at once.');
-        });
+        copyToClipboard(url, 'Subscription Link copied to clipboard!\nUse this in v2rayNG/v2rayN to import all configurations at once.');
     }
 
     function showConfigs(sysName) {
@@ -174,9 +203,7 @@
 
     function copyCurrentUri() {
         if (!currentConfigs[activeTab]) return;
-        navigator.clipboard.writeText(currentConfigs[activeTab]).then(() => {
-            alert(activeTab.toUpperCase() + ' URI copied to clipboard!');
-        });
+        copyToClipboard(currentConfigs[activeTab], activeTab.toUpperCase() + ' URI copied to clipboard!');
     }
 </script>
 
