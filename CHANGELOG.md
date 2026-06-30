@@ -1,6 +1,12 @@
-VERSION="5.0"
+VERSION="5.1"
 
 # Changelog
+
+## [v5.1] - 2026-06-30
+### Fixed
+- **HTTP Clipboard Copy Fix**: The "Copy" buttons would silently fail if you accessed the panel over HTTP instead of HTTPS (due to browsers blocking the modern Clipboard API on unencrypted connections). Re-wrote the clipboard script to intelligently fallback to the legacy `document.execCommand('copy')` invisible textarea method if it detects an insecure context.
+### Added
+- **QR Code Modal for Proxy Links**: Added a universal QR code generator using the backend `/api/get_proxy_qr` endpoint. Clicking any proxy link (VLESS, xHTTP, Hysteria 2, or Subscription URL) now opens a beautiful pop-up Modal with the QR code. Clicking on the QR code image will automatically copy the link text to your clipboard!
 
 ## [v5.0] - 2026-06-30
 ### Added

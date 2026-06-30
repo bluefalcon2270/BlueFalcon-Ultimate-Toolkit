@@ -508,6 +508,16 @@ def get_wg_qr(username):
             return process.stdout, 200, {'Content-Type': 'image/svg+xml'}
     return "QR Code generation failed.", 404
 
+@app.route('/api/get_proxy_qr', methods=['POST'])
+def get_proxy_qr():
+    if 'admin_logged_in' not in session: return "Unauthorized", 401
+    text = request.form.get('text')
+    if not text: return "No text provided", 400
+    process = subprocess.run(['qrencode', '-t', 'SVG', '-o', '-'], input=text, capture_output=True, text=True)
+    if process.returncode == 0:
+        return process.stdout, 200, {'Content-Type': 'image/svg+xml'}
+    return "QR Code generation failed.", 500
+
 # --- PROXY ROUTES ---
 def run_proxy_task(action, port, sni):
     log_file = '/tmp/system_task.log'
