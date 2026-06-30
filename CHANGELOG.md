@@ -1,33 +1,6 @@
-VERSION="5.2"
+VERSION="4.8"
 
 # Changelog
-
-## [v5.2] - 2026-06-30
-### Fixed
-- **Xray Key Generation**: Fixed an issue where newer Xray binary outputs (`PrivateKey:` vs `Private key:`) caused the script to fail capturing REALITY keys, resulting in empty keys and connection failures in VLESS clients.
-- **Hysteria Certificate Error**: Fixed "allowInsecure removed" error in Xray 1.8+ by parsing the SHA256 fingerprint of the self-signed Hysteria certificate and setting the `pinSHA256` parameter in the `hysteria2://` URI instead of using `insecure=1`.
-
-## [v5.1] - 2026-06-30
-### Fixed
-- **HTTP Clipboard Copy Fix**: The "Copy" buttons would silently fail if you accessed the panel over HTTP instead of HTTPS (due to browsers blocking the modern Clipboard API on unencrypted connections). Re-wrote the clipboard script to intelligently fallback to the legacy `document.execCommand('copy')` invisible textarea method if it detects an insecure context.
-### Added
-- **QR Code Modal for Proxy Links**: Added a universal QR code generator using the backend `/api/get_proxy_qr` endpoint. Clicking any proxy link (VLESS, xHTTP, Hysteria 2, or Subscription URL) now opens a beautiful pop-up Modal with the QR code. Clicking on the QR code image will automatically copy the link text to your clipboard!
-
-## [v5.0] - 2026-06-30
-### Added
-- **Subscription API Links**: Added automated backend proxy subscription generation! Clicking "Copy Subscription URL" will now give you a single Base64 encoded link that will automatically download the VLESS-TCP, VLESS-xHTTP, and Hysteria 2 configurations seamlessly into client apps like v2rayNG and Nekobox.
-- **Xray & Hysteria Wizard Setup**: You can now install and configure Xray & Hysteria directly during the initial system setup wizard.
-- **UI & Layout Engine Overhaul**: Completely overhauled the WireGuard and Proxy panel templates to use a native, responsive full-width block stack (matching the OpenVPN tab).
-- Fixed missing `unzip` and `jq` installation errors on raw debian installs.
-- Renamed "Next-Gen Proxy" to the more transparent and accurate "Xray & Hysteria Core".
-
-## [v4.9] - 2026-06-30
-### Added
-- **Next-Gen Proxy Engine Integration**: Completely rewrote the toolkit architecture to natively support multi-protocol stealth proxies via a unified "Next-Gen Proxy" manager. The system now seamlessly installs and manages **Xray-core** and **Hysteria-core** side-by-side. 
-- **VLESS-TCP-XTLS-Reality**: Added automated support for the world's most advanced stealth protocol via Xray.
-- **VLESS-xHTTP-Reality**: Added support for Xray's latest xHTTP transport layer.
-- **Hysteria 2**: Added the Hysteria 2 UDP engine natively alongside Xray for brutal speed optimization (gaming/downloads).
-- **Automated VLESS/Hysteria Link Generation**: The Web Panel now features a new UI tab that automatically manages Proxy clients and generates one-click `vless://` and `hysteria2://` share links, bypassing the need to use complex third-party GUIs.
 
 ## [v4.8] - 2026-06-30
 ### Fixed

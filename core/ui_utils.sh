@@ -4,7 +4,7 @@
 
 # --- Constants & Configuration ---
 UI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export BF_VERSION="v5.2"
+export BF_VERSION="v$(head -n 1 "${UI_DIR}/../CHANGELOG.md" | grep -oP '(?<=").*?(?=")')"
 APP_DIR="/opt/bluefalcon-ultimate-toolkit"
 readonly LOG_FILE="/var/log/bluefalcon_toolkit.log"
 readonly WARP_LOG="/var/log/bluefalcon_warp.log"
