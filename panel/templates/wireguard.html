@@ -1,0 +1,266 @@
+﻿{% extends "base.html" %}
+{% block title %}WireGuard | BF Panel{% endblock %}
+{% block header_title %}WireGuard Protocol{% endblock %}
+
+{% block content %}
+{% if not is_installed %}
+<div class="max-w-5xl space-y-6">
+    <div class="material-card p-6 border border-[#2C2C2E]">
+        <div id="wgControls">
+            <form id="wgInstallForm" onsubmit="startWgStream(event, 'install');" class="flex flex-col md:flex-row gap-4 items-end">
+                <div class="flex-1 w-full">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Listening Port</label>
+                    <input type="number" name="wg_port" value="{{ wg_port }}" class="w-full px-4 py-2.5 bg-[#1F1F22] border border-[#2C2C2E] rounded-xl focus:border-[#A8C7FA] focus:ring-1 focus:ring-[#A8C7FA] outline-none text-sm text-gray-200 font-mono transition-all" required>
+                </div>
+                <button type="submit" class="bg-[#0B57D0] hover:bg-[#0842A0] text-white font-bold px-8 py-2.5 rounded-xl transition shadow-sm text-sm h-[42px] whitespace-nowrap">Install WireGuard</button>
+            </form>
+        </div>
+
+        <!-- Persistent Terminal -->
+        <div id="wgTerminalContainer" class="mt-6">
+            <div class="mb-2 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span id="wgSpinner" class="hidden">
+                        <svg class="animate-spin h-4 w-4 text-[#34A853]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </span>
+                    <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M4 17h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    WireGuard Terminal
+                </h3>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500">Auto-scroll</span>
+                    <button id="wgScrollToggle" class="scroll-toggle on" type="button" onclick="toggleWgScroll(this)"><span class="thumb"></span></button>
+                </div>
+            </div>
+            <div class="bg-[#0F0F11] rounded-xl overflow-hidden border border-[#2C2C2E] shadow-inner">
+                <pre id="wgLogOutput" class="term-scroll p-4 text-[#A8C7FA] font-mono text-sm h-96 whitespace-pre-wrap leading-relaxed">BlueFalcon OS &gt; WireGuard not installed. Configure port above and click Install.</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- WireGuard IS installed -->
+<div class="max-w-6xl mx-auto h-[80vh] flex flex-col gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+        <!-- Add Client Card -->
+        <div class="material-card p-6 md:col-span-1 border border-[#2C2C2E] flex flex-col justify-center">
+            <h2 class="text-base font-bold text-white mb-4">Create WireGuard Client</h2>
+            <form id="addWgUserForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1.5">Client Name</label>
+                    <input type="text" id="wgClientName" placeholder="e.g. mobile_dev" class="input-field w-full px-4 py-2.5 rounded-lg text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 mb-1.5">Expiration (Days)</label>
+                    <input type="number" id="wgClientExp" value="30" class="input-field w-full px-4 py-2.5 rounded-lg text-sm" required>
+                </div>
+                <button type="submit" id="addWgBtn" class="w-full bg-[#1E3A5F] hover:bg-[#0B57D0] text-[#A8C7FA] hover:text-white px-4 py-2.5 rounded-lg font-bold text-sm transition-all border border-[#2A4A7F]">
+                    Create Client
+                </button>
+            </form>
+        </div>
+
+        <!-- System Info Card -->
+        <div class="material-card p-6 md:col-span-2 border border-[#2C2C2E] flex flex-col justify-center">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-base font-bold text-white">WireGuard Server</h2>
+                    <p class="text-xs text-gray-500 mt-1">Status: <span class="text-[#34A853] font-bold">Active</span> &nbsp;|&nbsp; Port: <span class="text-[#A8C7FA] font-mono">{{ wg_port }}</span></p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-[#1A1A1C] border border-[#2C2C2E] flex items-center justify-center">
+                    <svg class="w-6 h-6 text-[#A8C7FA]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-[#111113] border border-[#2C2C2E] rounded-xl p-4">
+                    <p class="text-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Total Clients</p>
+                    <p class="text-2xl font-bold text-white">{{ users|length }}</p>
+                </div>
+                <div class="bg-[#111113] border border-[#2C2C2E] rounded-xl p-4">
+                    <p class="text-xs text-gray-500 mb-1 uppercase tracking-wider font-semibold">Interface</p>
+                    <p class="text-2xl font-bold text-white">wg0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client List -->
+    <div class="material-card p-0 flex-1 flex flex-col min-h-0 border border-[#2C2C2E]">
+        <div class="p-6 border-b border-[#2C2C2E] flex justify-between items-center bg-[#1A1A1C] rounded-t-2xl shrink-0">
+            <h3 class="text-base font-bold text-white">Active Clients</h3>
+        </div>
+        <div class="overflow-auto flex-1 p-2 term-scroll">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-[#2C2C2E]">Client Name</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-[#2C2C2E]">IP Address</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-[#2C2C2E]">Status</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-[#2C2C2E]">Data (TX/RX)</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-[#2C2C2E] text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[#2C2C2E]">
+                    {% for u in users %}
+                    <tr class="hover:bg-[#1A1A1C] transition-colors group">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{{ u.display_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-[#A8C7FA] font-mono">{{ u.ip_address }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2.5 py-1 inline-flex text-[10px] leading-5 font-bold rounded-full bg-[#0842A0] text-[#A8C7FA] tracking-wide border border-[#0B57D0]">ACTIVE</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-400 font-mono">0B / 0B</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="showQR('{{ u.system_name }}')" class="text-[#A8C7FA] hover:text-white px-3 py-1.5 rounded-lg bg-[#111113] hover:bg-[#1E3A5F] border border-[#2C2C2E] transition-all">QR Code</button>
+                            <a href="/api/download_wg_conf/{{ u.system_name }}" class="text-[#A8C7FA] hover:text-white px-3 py-1.5 rounded-lg bg-[#111113] hover:bg-[#1E3A5F] border border-[#2C2C2E] transition-all">.conf</a>
+                            <button onclick="deleteWgUser('{{ u.system_name }}')" class="text-[#F28B82] hover:text-white px-3 py-1.5 rounded-lg bg-[#111113] hover:bg-red-900/50 border border-[#2C2C2E] transition-all">Revoke</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">No active clients found. Create one above.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div class="bg-[#111113] border border-[#2C2C2E] rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl transform scale-95 transition-all opacity-0" id="qrModalContent">
+        <h3 class="text-lg font-bold text-white mb-2" id="qrTitle">Client QR Code</h3>
+        <p class="text-xs text-gray-400 mb-6">Scan with the WireGuard mobile app.</p>
+        <div class="bg-white p-4 rounded-xl mx-auto inline-block w-64 h-64 flex items-center justify-center mb-6">
+            <div id="qrImage" class="w-full h-full flex items-center justify-center text-gray-500">
+                <svg class="animate-spin h-8 w-8 text-[#A8C7FA]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </div>
+        </div>
+        <button onclick="closeQR()" class="w-full bg-[#1A1A1C] hover:bg-[#2C2C2E] text-white px-4 py-2.5 rounded-lg font-bold text-sm transition-colors border border-[#2C2C2E]">Close</button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    let wgPoll = null;
+    let wgAutoScroll = true;
+
+    function toggleWgScroll(btn) {
+        wgAutoScroll = !wgAutoScroll;
+        btn.classList.toggle('on', wgAutoScroll);
+        btn.classList.toggle('off', !wgAutoScroll);
+    }
+
+    function startWgStream(event, action) {
+        event.preventDefault();
+        const portInput = document.querySelector('input[name="wg_port"]');
+        const port = portInput ? portInput.value : '51820';
+        const url = `/api/wireguard_stream?action=${action}&port=${port}`;
+
+        document.getElementById('wgSpinner').classList.remove('hidden');
+        const logWindow = document.getElementById('wgLogOutput');
+        logWindow.innerHTML = '';
+
+        fetch(url).then(() => {
+            if (wgPoll) clearInterval(wgPoll);
+            wgPoll = setInterval(() => {
+                fetch('/api/system_log')
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.log) {
+                            logWindow.innerHTML = data.log;
+                            if (wgAutoScroll) requestAnimationFrame(() => { logWindow.scrollTop = logWindow.scrollHeight; });
+                        }
+                        if (data.status === 'done') {
+                            clearInterval(wgPoll);
+                            document.getElementById('wgSpinner').classList.add('hidden');
+                            setTimeout(() => window.location.reload(), 1500);
+                        }
+                    });
+            }, 1000);
+        });
+    }
+
+    // Auto-resume if installing on page load
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch('/api/system_log')
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'running') {
+                    document.getElementById('wgSpinner').classList.remove('hidden');
+                    document.getElementById('wgLogOutput').innerHTML = data.log || '';
+                    if (wgPoll) clearInterval(wgPoll);
+                    wgPoll = setInterval(() => {
+                        fetch('/api/system_log').then(r => r.json()).then(d => {
+                            if (d.log) { document.getElementById('wgLogOutput').innerHTML = d.log; if (wgAutoScroll) document.getElementById('wgLogOutput').scrollTop = 99999; }
+                            if (d.status === 'done') { clearInterval(wgPoll); document.getElementById('wgSpinner').classList.add('hidden'); setTimeout(() => window.location.reload(), 1500); }
+                        });
+                    }, 1000);
+                }
+            });
+    });
+
+    {% if is_installed %}
+    document.getElementById('addWgUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('addWgBtn');
+        btn.disabled = true;
+        btn.textContent = 'Creating...';
+
+        const fd = new FormData();
+        fd.append('name', document.getElementById('wgClientName').value);
+        fd.append('exp', document.getElementById('wgClientExp').value);
+
+        fetch('/api/add_wg_user', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if(data.status === 'success') window.location.reload();
+                else { alert(data.message); btn.disabled = false; btn.textContent = 'Create Client'; }
+            });
+    });
+
+    function deleteWgUser(name) {
+        if(!confirm(`Revoke access for ${name}?`)) return;
+        const fd = new FormData(); fd.append('name', name);
+        fetch('/api/del_wg_user', { method: 'POST', body: fd })
+            .then(() => window.location.reload());
+    }
+
+    function showQR(name) {
+        const modal = document.getElementById('qrModal');
+        const content = document.getElementById('qrModalContent');
+        const imgContainer = document.getElementById('qrImage');
+        const title = document.getElementById('qrTitle');
+
+        title.textContent = name + ' QR Code';
+        imgContainer.innerHTML = '<svg class="animate-spin h-8 w-8 text-[#A8C7FA]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+
+        fetch('/api/get_wg_qr/' + name)
+            .then(r => r.text())
+            .then(svg => {
+                imgContainer.innerHTML = svg;
+                const svgEl = imgContainer.querySelector('svg');
+                if (svgEl) { svgEl.style.width = '100%'; svgEl.style.height = '100%'; }
+            });
+    }
+
+    function closeQR() {
+        const modal = document.getElementById('qrModal');
+        const content = document.getElementById('qrModalContent');
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 200);
+    }
+    {% endif %}
+</script>
+{% endblock %}

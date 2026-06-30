@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard | BlueFalcon{% endblock %}
+{% block header_title %}System Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl space-y-6">
+    <!-- Unified Network Manager Warning -->
+    {% if warp_installed and (ovpn_installed or wg_installed) %}
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 material-card mb-6 flex items-center shadow-sm">
+        <div class="flex-shrink-0">
+            <svg class="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <div class="ml-3">
+            <p class="text-sm text-blue-700 font-medium">
+                <strong>Unified Network Manager:</strong> WARP is active alongside your VPN protocols. Your VPN clients' outbound traffic is being securely routed through Cloudflare's network to protect this server's public IP.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Server Hardware Status -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- CPU Card -->
+        <div class="material-card p-6 pb-8 relative overflow-hidden flex flex-col">
+            <div class="flex justify-between items-start mb-4">
+                <span class="text-gray-500 font-medium">CPU Usage</span>
+                <span id="cpu_val" class="text-2xl font-bold text-gray-800">0%</span>
+            </div>
+            <div id="cpu_cores_container" class="mt-2 grid grid-cols-2 gap-4"></div>
+            <div class="absolute bottom-0 left-0 w-full bg-[#1F1F22] h-1.5">
+                <div id="cpu_bar" class="bg-[#0B57D0] h-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- RAM Card -->
+        <div class="material-card p-6 pb-8 relative overflow-hidden flex flex-col">
+            <div class="flex justify-between items-start mb-4">
+                <span class="text-gray-500 font-medium">Memory</span>
+                <div class="text-right">
+                    <span id="ram_val" class="text-2xl font-bold text-gray-800 block">0%</span>
+                    <span id="ram_detail" class="text-sm text-gray-400 mt-1">0 MB / 0 GB</span>
+                </div>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full bg-[#1F1F22] h-1.5">
+                <div id="ram_bar" class="bg-[#0B57D0] h-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Storage Card -->
+        <div class="material-card p-6 pb-8 relative overflow-hidden flex flex-col">
+            <div class="flex justify-between items-start mb-4">
+                <span class="text-gray-500 font-medium">Storage</span>
+                <div class="text-right">
+                    <span id="disk_val" class="text-2xl font-bold text-gray-800 block">0%</span>
+                    <span id="disk_detail" class="text-sm text-gray-400 mt-1">0 GB / 0 GB</span>
+                </div>
+            </div>
+            <div class="absolute bottom-0 left-0 w-full bg-[#1F1F22] h-1.5">
+                <div id="disk_bar" class="bg-[#0B57D0] h-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Bandwidth -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="material-card p-6 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-[#E8F0FE] flex items-center justify-center text-[#0B57D0]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                </div>
+                <div>
+                    <span class="block text-sm text-gray-500 font-medium">Live Download</span>
+                    <span id="net_rx_val" class="block text-xl font-bold text-gray-800">0 B/s</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="block text-sm text-gray-500 font-medium">Total Received</span>
+                <span class="block text-lg font-bold text-gray-800">{{ t_rx|format_bytes }}</span>
+            </div>
+        </div>
+        
+        <div class="material-card p-6 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-[#FCE8E6] flex items-center justify-center text-[#B3261E]">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                </div>
+                <div>
+                    <span class="block text-sm text-gray-500 font-medium">Live Upload</span>
+                    <span id="net_tx_val" class="block text-xl font-bold text-gray-800">0 B/s</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="block text-sm text-gray-500 font-medium">Total Sent</span>
+                <span class="block text-lg font-bold text-gray-800">{{ t_tx|format_bytes }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Chart -->
+    <div class="material-card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-gray-500 font-medium">Network Traffic (Live)</span>
+        </div>
+        <div class="w-full h-64">
+            <canvas id="trafficChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let lastRx = 0, lastTx = 0, firstPoll = true;
+    
+    // Initialize Chart.js
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+    const gradientRx = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientRx.addColorStop(0, 'rgba(168, 199, 250, 0.4)');
+    gradientRx.addColorStop(1, 'rgba(168, 199, 250, 0.0)');
+    
+    const gradientTx = ctx.createLinearGradient(0, 0, 0, 400);
+    gradientTx.addColorStop(0, 'rgba(242, 139, 130, 0.4)');
+    gradientTx.addColorStop(1, 'rgba(242, 139, 130, 0.0)');
+
+    const trafficChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [
+                {
+                    label: 'Download (KB/s)',
+                    borderColor: '#A8C7FA',
+                    backgroundColor: gradientRx,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    data: Array(20).fill(0)
+                },
+                {
+                    label: 'Upload (KB/s)',
+                    borderColor: '#F28B82',
+                    backgroundColor: gradientTx,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    data: Array(20).fill(0)
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 500 },
+            plugins: {
+                legend: { labels: { color: '#D1D5DB' } }
+            },
+            scales: {
+                x: { display: false },
+                y: {
+                    grid: { color: '#2C2C2E' },
+                    ticks: { color: '#9CA3AF' }
+                }
+            }
+        }
+    });
+
+    function formatSpeed(bytes) {
+        if (bytes < 1024) return bytes + " B/s";
+        else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB/s";
+        else return (bytes / 1048576).toFixed(2) + " MB/s";
+    }
+    setInterval(() => {
+        fetch('/api/sysinfo').then(r => r.json()).then(data => {
+            // CPU
+            document.getElementById('cpu_val').innerText = data.cpu + '%';
+            document.getElementById('cpu_bar').style.width = data.cpu + '%';
+            const coresContainer = document.getElementById('cpu_cores_container'); 
+            coresContainer.innerHTML = '';
+            if (data.cpu_cores) {
+                data.cpu_cores.forEach((coreLoad, index) => {
+                    coresContainer.insertAdjacentHTML('beforeend', `<div><div class="flex justify-between text-xs text-gray-500 mb-1"><span>Core ${index}</span><span>${coreLoad.toFixed(0)}%</span></div><div class="w-full bg-[#1F1F22] h-1 material-pill"><div class="bg-gray-500 h-1 material-pill" style="width: ${coreLoad}%"></div></div></div>`);
+                });
+            }
+            
+            // RAM & Disk
+            document.getElementById('ram_val').innerText = data.ram_percent + '%';
+            document.getElementById('ram_detail').innerText = data.ram_used + ' / ' + data.ram_total;
+            document.getElementById('ram_bar').style.width = data.ram_percent + '%';
+            
+            document.getElementById('disk_val').innerText = data.disk_percent + '%';
+            document.getElementById('disk_detail').innerText = data.disk_used + ' / ' + data.disk_total;
+            document.getElementById('disk_bar').style.width = data.disk_percent + '%';
+            
+            // Network
+            if (!firstPoll) {
+                let rxSpeed = Math.max(0, (data.net_rx - lastRx) / 2);
+                let txSpeed = Math.max(0, (data.net_tx - lastTx) / 2);
+                
+                document.getElementById('net_rx_val').innerText = formatSpeed(rxSpeed);
+                document.getElementById('net_tx_val').innerText = formatSpeed(txSpeed);
+                
+                trafficChart.data.datasets[0].data.push(rxSpeed / 1024);
+                trafficChart.data.datasets[0].data.shift();
+                trafficChart.data.datasets[1].data.push(txSpeed / 1024);
+                trafficChart.data.datasets[1].data.shift();
+                trafficChart.update('none');
+            }
+            lastRx = data.net_rx; lastTx = data.net_tx; firstPoll = false;
+        });
+    }, 2000);
+</script>
+{% endblock %}

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BlueFalcon Panel{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        /* Material Design Dark Mode Core Injection */
+        body { font-family: 'Inter', sans-serif; background-color: #0F0F11 !important; color: #F3F4F6 !important; }
+        .material-card { background: #1C1C1E !important; border: 1px solid #2C2C2E !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5) !important; border-radius: 24px; }
+        .material-pill { border-radius: 9999px; }
+        .input-field, input, select { background-color: #2C2C2E !important; border: 1px solid #3A3A3C !important; color: #F3F4F6 !important; outline: none; transition: all 0.2s; }
+        .input-field:focus, input:focus, select:focus { border-color: #A8C7FA !important; box-shadow: 0 0 0 2px rgba(168,199,250,0.1) !important; }
+        
+        /* Layout Elements */
+        aside, header { background-color: #0F0F11 !important; border-color: #2C2C2E !important; }
+        .nav-link:not(.active) { color: #9CA3AF !important; }
+        .nav-link:not(.active):hover { background-color: #1F1F22 !important; color: #F3F4F6 !important; }
+        .nav-link.active { background-color: #1A2B4C !important; color: #A8C7FA !important; font-weight: 600; }
+        
+        /* Typography Overrides */
+        h1, h2, h3, h4, h5, h6, .text-gray-800, .text-gray-900 { color: #F3F4F6 !important; }
+        .text-gray-700, .text-gray-600 { color: #D1D5DB !important; }
+        .text-gray-500 { color: #9CA3AF !important; }
+        
+        /* Background & Border Overrides */
+        .bg-white { background-color: #1C1C1E !important; }
+        .bg-gray-50 { background-color: #1F1F22 !important; }
+        .bg-gray-100 { background-color: #2C2C2E !important; }
+        .border-gray-100, .border-gray-200 { border-color: #2C2C2E !important; }
+        
+        /* Tables */
+        table tr { border-color: #2C2C2E !important; }
+        table tr:hover { background-color: #1F1F22 !important; }
+        table th { background-color: #1C1C1E !important; color: #9CA3AF !important; }
+        table td { color: #D1D5DB !important; }
+        
+        /* Highlight Status Pills */
+        .bg-\\[\\#E8F0FE\\] { background-color: #1A2B4C !important; color: #A8C7FA !important; }
+        .bg-\\[\\#FCE8E6\\] { background-color: #3B1A1A !important; color: #F28B82 !important; }
+        .bg-\\[\\#E6F4EA\\] { background-color: #14331C !important; color: #81C995 !important; }
+        .bg-\\[\\#FFF8E1\\] { background-color: #3D2E15 !important; color: #FDE293 !important; }
+        
+        /* Buttons & Brand Colors */
+        .text-\\[\\#0B57D0\\] { color: #A8C7FA !important; }
+        .bg-\\[\\#0B57D0\\] { background-color: #A8C7FA !important; color: #0F0F11 !important; font-weight: 700 !important; }
+        .hover\\:bg-\\[\\#0842A0\\]:hover { background-color: #8AB4F8 !important; }
+
+        /* Terminal Scrollbar */
+        .term-scroll { overflow-y: scroll !important; scrollbar-width: thin; scrollbar-color: #3A3A3C #0F0F11; }
+        .term-scroll::-webkit-scrollbar { width: 6px; }
+        .term-scroll::-webkit-scrollbar-track { background: #0F0F11; border-radius: 3px; }
+        .term-scroll::-webkit-scrollbar-thumb { background: #3A3A3C; border-radius: 3px; }
+        .term-scroll::-webkit-scrollbar-thumb:hover { background: #5A5A5C; }
+
+        /* Auto-scroll Toggle */
+        .scroll-toggle { position: relative; display: inline-flex; align-items: center; width: 36px; height: 20px; border-radius: 9999px; cursor: pointer; transition: background-color 0.2s; border: none; outline: none; flex-shrink: 0; }
+        .scroll-toggle .thumb { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: white; transition: transform 0.2s; }
+        .scroll-toggle.on { background: #34A853; }
+        .scroll-toggle.off { background: #4B5563; }
+        .scroll-toggle.on .thumb { transform: translateX(18px); }
+        .scroll-toggle.off .thumb { transform: translateX(3px); }
+    </style>
+</head>
+<body class="min-h-screen flex">
+    <aside class="w-72 border-r fixed h-full flex flex-col z-10 p-4">
+        <div class="h-16 flex items-center px-4 mb-4">
+            <span class="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-[#A8C7FA] to-[#0B57D0]">BF Panel</span>
+        </div>
+        
+        <nav class="flex-1 space-y-1 overflow-y-auto mt-2">
+            <a href="/dashboard" class="nav-link material-pill flex items-center gap-4 px-5 py-3.5 transition-colors {% if request.path == '/dashboard' %}active{% endif %}">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"></path></svg>
+                Dashboard
+            </a>
+            
+            <a href="/openvpn" class="nav-link material-pill flex items-center gap-4 px-5 py-3.5 transition-colors {% if request.path == '/openvpn' %}active{% endif %}">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                OpenVPN
+            </a>
+            <a href="/wireguard" class="nav-link material-pill flex items-center gap-4 px-5 py-3.5 transition-colors {% if request.path == '/wireguard' %}active{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                WireGuard
+            </a>
+            <a href="/warp" class="nav-link material-pill flex items-center gap-4 px-5 py-3.5 transition-colors {% if request.path == '/warp' %}active{% endif %}">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.759-1.366 5 5 0 011.61 9.346H5.5z"></path></svg>
+                WARP
+            </a>
+            
+            <a href="/system" class="nav-link material-pill flex items-center gap-4 px-5 py-3.5 transition-colors {% if request.path == '/system' %}active{% endif %}">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                System Tools
+            </a>
+            
+            <a href="/preferences" class="nav-link material-pill flex items-center gap-4 px-5 py-3.5 transition-colors {% if request.path == '/preferences' %}active{% endif %}">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
+                Preferences
+            </a>
+        </nav>
+        
+        <div class="mt-auto pt-4">
+            <a href="/logout" class="flex items-center gap-4 px-5 py-3.5 material-pill text-[#F28B82] hover:bg-[#3B1A1A] font-medium transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <main class="ml-72 flex-1 flex flex-col border-l border-gray-200">
+        <header class="h-20 flex items-center px-8 justify-between border-b border-gray-200">
+            <h1 class="text-2xl font-semibold text-gray-800">{% block header_title %}Overview{% endblock %}</h1>
+            {% if settings %}
+                <div class="bg-[#111113] border border-[#2C2C2E] rounded-xl px-4 py-2 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-[#81C995]"></div>
+                    <span class="text-sm font-medium text-gray-400">{{ settings.display_name if settings.display_name else settings.server_name }}</span>
+                </div>
+            {% endif %}
+        </header>
+        <div class="p-8">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</body>
+</html>
