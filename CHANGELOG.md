@@ -1,6 +1,11 @@
-VERSION="5.4"
+VERSION="5.5"
 
 # Changelog
+
+## [v5.5] - 2026-06-30
+### Fixed
+- **3x-ui Installation Block**: Fixed an issue where the `3x-ui` installer was not correctly written to disk, preventing the daemon from starting and causing a `404 NOT FOUND` API error when fetching subscriptions. 
+- **Re-install Button**: Added a dedicated `Re-install 3x-ui` button inside the Xray panel to force re-installation without having to wipe the database.
 
 ## [v5.4] - 2026-06-30
 ### Added
