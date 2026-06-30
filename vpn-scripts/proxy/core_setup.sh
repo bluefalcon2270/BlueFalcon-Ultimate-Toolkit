@@ -29,8 +29,8 @@ chmod +x /usr/local/bin/hysteria
 echo "  Generating Xray REALITY Keys"
 echo "-----------------------------------------------------"
 XRAY_KEYS=$(/usr/local/bin/xray x25519)
-XRAY_PRIV=$(echo "$XRAY_KEYS" | grep -i "Private" | awk '{print $NF}')
-XRAY_PUB=$(echo "$XRAY_KEYS" | grep -i "Public" | awk '{print $NF}')
+XRAY_PRIV=$(echo "$XRAY_KEYS" | grep "Private key" | awk '{print $3}')
+XRAY_PUB=$(echo "$XRAY_KEYS" | grep "Public key" | awk '{print $3}')
 XRAY_SHORTID=$(openssl rand -hex 8)
 
 echo "  Generating Hysteria Certificates"
