@@ -682,6 +682,9 @@ def xray_subscription(sys_name):
     else:
         hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&insecure=1&allowInsecure=1#{sys_name}-Hysteria2"
     
+    vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
+    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
+    
     sub_text = f"{vless_tcp}\n{vless_xhttp}\n{hysteria_uri}\n"
     encoded = base64.b64encode(sub_text.encode('utf-8')).decode('utf-8')
     
@@ -718,8 +721,8 @@ def get_xray_configs(sys_name):
     except Exception:
         hys_pin = ""
 
-    vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
-    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
+    vless_tcp = f"vless://{uuid_str}@{ip}:{port}?type=tcp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}&flow=xtls-rprx-vision#{sys_name}-TCP"
+    vless_xhttp = f"vless://{uuid_str}@{ip}:{port}?type=xhttp&security=reality&encryption=none&pbk={pbk}&fp=chrome&sni={sni}&sid={sid}#{sys_name}-xHTTP"
     
     if hys_pin:
         hysteria_uri = f"hysteria2://{uuid_str}@{ip}:443/?sni={sni}&peer={sni}&pinSHA256={hys_pin}#{sys_name}-Hysteria2"

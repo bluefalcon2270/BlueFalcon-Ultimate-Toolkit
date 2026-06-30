@@ -28,17 +28,27 @@ mkdir -p /etc/xray
 echo "  -> Generating x25519 Keys for REALITY..."
 XRAY_BIN=$(command -v xray || echo /usr/local/bin/xray)
 $XRAY_BIN x25519 > /tmp/xray_keys.txt
-PRV_KEY=$(grep -i "Private key" /tmp/xray_keys.txt | awk '{print $3}' | tr -d '\033' | sed 's/\[[0-9;]*[a-zA-Z]//g')
-PUB_KEY=$(grep -i "Public key" /tmp/xray_keys.txt | awk '{print $3}' | tr -d '\033' | sed 's/\[[0-9;]*[a-zA-Z]//g')
-SHORT_ID=$(openssl rand -hex 8)
 
-# Save keys for Python backend to read when generating Sub Links
-cat <<EOF > /etc/xray/reality.json
-{
-  "pbk": "${PUB_KEY}",
-  "sid": "${SHORT_ID}"
-}
-EOF
+# Use Python to strictly parse the keys, stripping all ANSI/newlines, and ensure they are 43-character base64url strings.
+python3 -c "
+import re, json, os, binascii
+try:
+    with open('/tmp/xray_keys.txt', 'r', encoding='utf-8', errors='ignore') as f:
+        data = f.read()
+    # Find base64url strings that are exactly 43 chars long
+    prv = re.search(r'(?i)Private key.*?(?P<key>[A-Za-z0-9_-]{43})', data).group('key')
+    pub = re.search(r'(?i)Public key.*?(?P<key>[A-Za-z0-9_-]{43})', data).group('key')
+    sid = binascii.b2a_hex(os.urandom(4)).decode('utf-8')
+    with open('/etc/xray/reality.json', 'w') as f:
+        json.dump({'pbk': pub, 'sid': sid}, f)
+    with open('/tmp/xray_parsed_keys.txt', 'w') as f:
+        f.write(prv + '\n' + sid)
+except Exception as e:
+    print('Failed to parse keys:', e)
+"
+
+PRV_KEY=$(sed -n '1p' /tmp/xray_parsed_keys.txt)
+SHORT_ID=$(sed -n '2p' /tmp/xray_parsed_keys.txt)
 
 # 3. Write Xray Configuration (config.json)
 echo "  -> Writing Xray config.json..."

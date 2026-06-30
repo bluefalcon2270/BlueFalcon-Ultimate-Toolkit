@@ -1,6 +1,13 @@
-VERSION="5.1"
+VERSION="5.2"
 
 # Changelog
+
+## [v5.2] - 2026-06-30
+### Fixed
+- **Xray REALITY strict key validation**: Implemented a resilient Python parsing block inside `core_setup.sh` to extract the `xray x25519` keys perfectly (guaranteeing a 43-character base64url string) irrespective of system architecture or OS variations.
+- **VLESS URI Specification**: Added the strictly required `encryption=none` attribute to the VLESS TCP & xHTTP connection links to prevent v2rayN parser crashes.
+- **QR Code Readability**: Added a margin "quiet zone" of `4` to the generated QR codes so smartphone cameras and v2rayNG can instantly detect the boundary.
+- **Subscription Link QR**: Added a new "Sub Link" tab inside the QR code modal! You can now scan the subscription link directly to your phone.
 
 ## [v5.1] - 2026-06-30
 ### Fixed
