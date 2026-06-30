@@ -1,24 +1,6 @@
-VERSION="5.1"
+VERSION="4.8"
 
 # Changelog
-
-## [v5.1] - 2026-07-01
-### Fixed
-- **OpenVPN & WireGuard 500 Internal Server Errors**: Fixed crashes when clicking on the protocol tabs caused by SQLite `IndexError` throwing exceptions in the Jinja templates. This occurred due to newly added schema columns (like `mtu`) missing from existing DB rows. Fixed by casting SQL rows to native Python dictionaries and implementing safe dictionary `.get()` fallback methods.
-- **WireGuard QR Code Generation**: Fixed QR codes failing to display or returning 404 errors due to `qrencode` parameter incompatibilities (`-r`) across different Ubuntu versions. Moved to using safe Bash input redirection `<` instead.
-
-## [v5.0] - 2026-07-01
-### Added
-- **Protocol-Specific Settings**: Deprecated the centralized "VPN Network Parameters" in the Preferences tab. All protocol settings (Port, DNS, MTU) are now dynamically managed inside their respective OpenVPN and WireGuard tabs via real-time modals.
-- **Advanced WireGuard Customization**: Added the ability to modify Port, Primary DNS, Secondary DNS, and MTU for WireGuard both during the initial installation wizard and post-installation via the new Settings modal.
-- **Database Schema Update**: Added `mtu` column to the `settings` SQLite table to track connection packet sizes natively.
-
-### Fixed
-- **WireGuard Internal Server Error**: Fixed a critical 500 Internal Server Error when creating a new WireGuard client, caused by the UI template attempting to calculate expiration dates without a `current_time` variable passed from the Python backend.
-
-## [v4.9] - 2026-06-30
-### Changed
-- **WireGuard UI Overhaul**: Ripped out the grid/dashboard layout on the WireGuard panel and replaced it with the vertically-stacked, full-width UI used by the OpenVPN panel for a more cohesive design experience across protocols.
 
 ## [v4.8] - 2026-06-30
 ### Fixed

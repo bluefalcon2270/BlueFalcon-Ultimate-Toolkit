@@ -5,23 +5,10 @@
 set -e
 umask 077
 
-DB_FILE="/opt/bluefalcon-ultimate-toolkit/panel.db"
 PORT="${1:-51820}"
 DNS1="${2:-8.8.8.8}"
 DNS2="${3:-8.8.4.4}"
-
-if [ -z "$PORT" ]; then
-    PORT=$(sqlite3 "$DB_FILE" "SELECT port FROM settings WHERE server_name='wireguard';")
-    if [ -z "$PORT" ]; then PORT=51820; fi
-fi
-
-SERVER_PUB_IP=$(sqlite3 "$DB_FILE" "SELECT public_ip FROM settings WHERE server_name='wireguard';")
-if [ -z "$SERVER_PUB_IP" ]; then
-    SERVER_PUB_IP=$(curl --interface $(ip route | awk '/default/ {print $5}' | head -1) -s4 ifconfig.me)
-fi
-
-MTU=$(sqlite3 "$DB_FILE" "SELECT mtu FROM settings WHERE server_name='wireguard';")
-if [ -z "$MTU" ]; then MTU=1420; fi
+PUBLIC_IP=$(curl --interface $(ip route show table main | awk '/default/ {print $5}' | head -1) -s4 ifconfig.me)
 
 echo "🚀 STARTING WIREGUARD INSTALLATION..."
 echo "-----------------------------------------------------"
@@ -47,7 +34,6 @@ cat > /etc/wireguard/wg0.conf <<EOF
 [Interface]
 Address = 10.7.0.1/24, fd42:42:42:43::1/64
 ListenPort = ${PORT}
-MTU = ${MTU}
 PrivateKey = ${SERVER_PRIV}
 PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE; ip6tables -A FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
 PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE; ip6tables -D FORWARD -i wg0 -j ACCEPT; ip6tables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE

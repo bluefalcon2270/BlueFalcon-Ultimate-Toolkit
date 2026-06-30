@@ -56,19 +56,11 @@ def get_db():
 def init_db():
     conn = get_db()
     conn.execute('CREATE TABLE IF NOT EXISTS admin (username TEXT, password TEXT)')
-    conn.execute('CREATE TABLE IF NOT EXISTS settings (server_name TEXT, protocol TEXT, port INTEGER, dns TEXT, dns2 TEXT, conn_limit TEXT, panel_port INTEGER, is_installed INTEGER DEFAULT 0, mtu INTEGER DEFAULT 1420)')
+    conn.execute('CREATE TABLE IF NOT EXISTS settings (server_name TEXT, protocol TEXT, port INTEGER, dns TEXT, dns2 TEXT, conn_limit TEXT, panel_port INTEGER, is_installed INTEGER DEFAULT 0)')
     
     # v2.4 Migration: Safely add public_ip column if it doesn't exist
     try:
         conn.execute('ALTER TABLE settings ADD COLUMN public_ip TEXT')
-    except sqlite3.OperationalError:
-        pass
-
-    # v4.9 Migration: Safely add mtu column
-    try:
-        conn.execute('ALTER TABLE settings ADD COLUMN mtu INTEGER DEFAULT 1420')
-        conn.execute("UPDATE settings SET mtu=1500 WHERE server_name='openvpn'")
-        conn.execute("UPDATE settings SET mtu=1420 WHERE server_name='wireguard'")
     except sqlite3.OperationalError:
         pass
 
@@ -85,11 +77,11 @@ def init_db():
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM settings WHERE server_name='openvpn'")
     if cursor.fetchone()[0] == 0:
-        conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, mtu) VALUES ('openvpn', 'udp', 1194, '8.8.8.8', '8.8.4.4', '1', 5000, 0, 1500)")
+        conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed) VALUES ('openvpn', 'udp', 1194, '8.8.8.8', '8.8.4.4', '1', 5000, 0)")
         
     cursor.execute("SELECT COUNT(*) FROM settings WHERE server_name='wireguard'")
     if cursor.fetchone()[0] == 0:
-        conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed, mtu) VALUES ('wireguard', 'udp', 51820, '8.8.8.8', '8.8.4.4', '1', 5000, 0, 1420)")
+        conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed) VALUES ('wireguard', 'udp', 51820, '8.8.8.8', '8.8.4.4', '1', 5000, 0)")
         
     cursor.execute("SELECT COUNT(*) FROM warp")
     if cursor.fetchone()[0] == 0:
@@ -333,14 +325,11 @@ def openvpn_dashboard():
         return redirect(url_for('openvpn_dashboard'))
 
     users = conn.execute('SELECT * FROM users').fetchall()
-    settings_row = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
+    settings = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
     conn.close()
     
-    if settings_row is None:
+    if settings is None:
         settings = {'is_installed': 0}
-    else:
-        settings = dict(settings_row)
-        if 'mtu' not in settings: settings['mtu'] = 1500
     
     live_traffic, _, _ = get_traffic()
     user_stats = {}
@@ -383,13 +372,13 @@ def openvpn_stream():
     if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
     protocol = request.form.get('protocol', 'udp')
     port = int(request.form.get('port', 1194))
-    dns1 = request.form.get('ovpn_dns1', '8.8.8.8').strip()
-    dns2 = request.form.get('ovpn_dns2', '8.8.4.4').strip()
-    mtu = int(request.form.get('ovpn_mtu', 1500))
+    preset = request.form.get('dns_preset', '1.1.1.1')
+    dns1 = '8.8.8.8' if preset == '8.8.8.8' else '1.1.1.1'
+    dns2 = '8.8.4.4' if preset == '8.8.8.8' else '1.0.0.1'
     
     conn = get_db()
-    conn.execute("UPDATE settings SET protocol=?, port=?, dns=?, dns2=?, mtu=? WHERE server_name='openvpn'", 
-                 (protocol, port, dns1, dns2, mtu))
+    conn.execute("UPDATE settings SET protocol=?, port=?, dns=?, dns2=? WHERE server_name='openvpn'", 
+                 (protocol, port, dns1, dns2))
     conn.commit(); conn.close()
     
     os.system(f"ufw allow {port}/{protocol} >/dev/null 2>&1")
@@ -398,53 +387,6 @@ def openvpn_stream():
     
     threading.Thread(target=run_ovpn_task, args=(protocol, port, dns1, dns2), daemon=True).start()
     return jsonify({"status": "started"})
-
-@app.route('/api/ovpn_settings', methods=['POST'])
-def ovpn_settings():
-    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
-    new_port = request.form.get('ovpn_port', 1194, type=int)
-    new_proto = request.form.get('ovpn_proto', 'udp')
-    new_dns1 = request.form.get('ovpn_dns1', '8.8.8.8').strip()
-    new_dns2 = request.form.get('ovpn_dns2', '').strip()
-    new_mtu = request.form.get('ovpn_mtu', 1500, type=int)
-    new_limit = request.form.get('ovpn_conn_limit', '1')
-    
-    conn = get_db()
-    curr = conn.execute("SELECT port, protocol FROM settings WHERE server_name='openvpn'").fetchone()
-    old_port = curr['port']; old_proto = curr['protocol']
-    
-    conn.execute("UPDATE settings SET port=?, protocol=?, dns=?, dns2=?, conn_limit=?, mtu=? WHERE server_name='openvpn'", 
-                 (new_port, new_proto, new_dns1, new_dns2, new_limit, new_mtu))
-    conn.commit(); conn.close()
-    
-    try:
-        with open('/etc/openvpn/server/server.conf', 'r') as f: lines = f.readlines()
-        with open('/etc/openvpn/server/server.conf', 'w') as f:
-            for line in lines:
-                if 'push "dhcp-option DNS' in line or 'duplicate-cn' in line: continue
-                if line.strip().startswith('port'): f.write(f'port {new_port}\n')
-                elif line.strip().startswith('proto'): f.write(f'proto {new_proto}\n')
-                elif line.strip().startswith('tun-mtu'): f.write(f'tun-mtu {new_mtu}\n')
-                else: f.write(line)
-            f.write(f'push "dhcp-option DNS {new_dns1}"\n')
-            if new_dns2: f.write(f'push "dhcp-option DNS {new_dns2}"\n')
-            if new_limit == "unlimited": f.write('duplicate-cn\n')
-            
-        if new_port != old_port or new_proto != old_proto:
-            os.system(f"ufw delete allow {old_port}/{old_proto} >/dev/null 2>&1")
-            os.system(f"ufw allow {new_port}/{new_proto} >/dev/null 2>&1")
-            os.system(f"iptables -D INPUT -p {old_proto} --dport {old_port} -j ACCEPT")
-            os.system(f"iptables -I INPUT -p {new_proto} --dport {new_port} -j ACCEPT")
-            
-        os.system("systemctl restart openvpn-server@server")
-        
-        # Regenerate users so their config files reflect new port/DNS/MTU
-        for u in conn.execute('SELECT system_name, password FROM users').fetchall(): 
-            subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/openvpn/add_user.sh', u['system_name'], u['password'], '30'], check=False)
-            
-        return jsonify({"status": "success"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
 
 # --- WIREGUARD ROUTES ---
 def run_wg_task(action, port):
@@ -477,10 +419,6 @@ def wireguard():
     wg_port_row = conn.execute("SELECT port FROM settings WHERE server_name='wireguard'").fetchone()
     wg_port = wg_port_row[0] if wg_port_row else 51820
     
-    settings_row = conn.execute("SELECT * FROM settings WHERE server_name='wireguard'").fetchone()
-    wg_settings = dict(settings_row) if settings_row else {'dns': '8.8.8.8', 'dns2': '8.8.4.4', 'mtu': 1420, 'port': 51820}
-    if 'mtu' not in wg_settings or wg_settings['mtu'] is None: wg_settings['mtu'] = 1420
-    
     users_data = []
     if is_installed:
         users = conn.execute('SELECT * FROM wg_users').fetchall()
@@ -488,73 +426,15 @@ def wireguard():
             users_data.append(dict(u))
     conn.close()
     
-    import time
-    return render_template('wireguard.html', is_installed=is_installed, wg_port=wg_port, settings=wg_settings, users=users_data, current_time=int(time.time()))
+    return render_template('wireguard.html', is_installed=is_installed, wg_port=wg_port, users=users_data)
 
 @app.route('/api/wireguard_stream')
 def wireguard_stream():
     if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
     action = request.args.get('action')
     port = request.args.get('port', 51820)
-    dns1 = request.args.get('dns1', '8.8.8.8')
-    dns2 = request.args.get('dns2', '8.8.4.4')
-    mtu = request.args.get('mtu', 1420)
-    
-    conn = get_db()
-    conn.execute("UPDATE settings SET port=?, dns=?, dns2=?, mtu=? WHERE server_name='wireguard'", (port, dns1, dns2, mtu))
-    conn.commit(); conn.close()
-    
     threading.Thread(target=run_wg_task, args=(action, port), daemon=True).start()
     return jsonify({"status": "started"})
-
-@app.route('/api/wg_settings', methods=['POST'])
-def wg_settings():
-    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
-    new_port = request.form.get('wg_port', 51820, type=int)
-    new_dns1 = request.form.get('wg_dns1', '8.8.8.8').strip()
-    new_dns2 = request.form.get('wg_dns2', '').strip()
-    new_mtu = request.form.get('wg_mtu', 1420, type=int)
-    
-    conn = get_db()
-    curr = conn.execute("SELECT port, dns, dns2, mtu FROM settings WHERE server_name='wireguard'").fetchone()
-    old_port = curr['port']
-    
-    conn.execute("UPDATE settings SET port=?, dns=?, dns2=?, mtu=? WHERE server_name='wireguard'", 
-                 (new_port, new_dns1, new_dns2, new_mtu))
-    conn.commit(); conn.close()
-    
-    try:
-        # Update /etc/wireguard/wg0.conf
-        with open('/etc/wireguard/wg0.conf', 'r') as f: lines = f.readlines()
-        with open('/etc/wireguard/wg0.conf', 'w') as f:
-            for line in lines:
-                if line.strip().startswith('ListenPort'): f.write(f'ListenPort = {new_port}\n')
-                elif line.strip().startswith('MTU'): f.write(f'MTU = {new_mtu}\n')
-                else: f.write(line)
-        
-        # Handle UFW rules if port changed
-        if new_port != old_port:
-            os.system(f"ufw delete allow {old_port}/udp >/dev/null 2>&1")
-            os.system(f"ufw allow {new_port}/udp >/dev/null 2>&1")
-            os.system(f"iptables -D INPUT -p udp --dport {old_port} -j ACCEPT")
-            os.system(f"iptables -I INPUT -p udp --dport {new_port} -j ACCEPT")
-        
-        # Restart interface
-        os.system("systemctl restart wg-quick@wg0")
-        
-        # Note: DNS changes apply to future clients. Existing clients must re-download config.
-        # Alternatively, we could auto-sed existing client configs.
-        client_dir = "/etc/wireguard/clients"
-        if os.path.exists(client_dir):
-            for conf_file in os.listdir(client_dir):
-                if conf_file.endswith(".conf"):
-                    cpath = os.path.join(client_dir, conf_file)
-                    new_dns_line = f"DNS = {new_dns1}" + (f", {new_dns2}" if new_dns2 else "")
-                    os.system(f"sed -i 's/^DNS = .*/{new_dns_line}/' \"{cpath}\"")
-                    
-        return jsonify({"status": "success"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/add_wg_user', methods=['POST'])
 def add_wg_user():
@@ -596,7 +476,7 @@ def get_wg_qr(username):
     if 'admin_logged_in' not in session: return "Unauthorized", 401
     conf_path = f"/etc/wireguard/clients/{username}.conf"
     if os.path.exists(conf_path):
-        process = subprocess.run(f"qrencode -t SVG < '{conf_path}'", shell=True, capture_output=True, text=True)
+        process = subprocess.run(['qrencode', '-t', 'SVG', '-r', conf_path], capture_output=True, text=True)
         if process.returncode == 0:
             return process.stdout, 200, {'Content-Type': 'image/svg+xml'}
     return "QR Code generation failed.", 404
@@ -913,6 +793,7 @@ def download_backup(filename):
     path = f"/var/backups/bluefalcon/{filename}"
     if not os.path.exists(path): return "Backup not found", 404
     return send_file(path, as_attachment=True)
+
 # --- Preferences (Settings, Logs, About) ---
 @app.route('/preferences', methods=['GET', 'POST'])
 def preferences():
@@ -923,28 +804,67 @@ def preferences():
         curr_settings = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
         if not curr_settings: curr_settings = conn.execute('SELECT * FROM settings').fetchone()
         old_panel_port = curr_settings['panel_port']
+        old_vpn_port = curr_settings['port']
+        old_vpn_proto = curr_settings['protocol']
         
-        new_panel_port = int(request.form.get('panel_port', curr_settings['panel_port']))
+        preset = request.form['dns_preset']
+        raw_dns1 = request.form.get('custom_dns1', '8.8.8.8') if preset == 'custom' else preset
+        raw_dns2 = request.form.get('custom_dns2', '') if preset == 'custom' else '1.0.0.1' if raw_dns1=='1.1.1.1' else '8.8.4.4' if raw_dns1=='8.8.8.8' else '149.112.112.112' if raw_dns1=='9.9.9.9' else '94.140.15.15' if raw_dns1=='94.140.14.14' else ''
+        
+        dns1 = raw_dns1.replace('\n', '').replace('\r', '').replace('"', '')
+        dns2 = raw_dns2.replace('\n', '').replace('\r', '').replace('"', '')
+
+        new_limit = request.form.get('conn_limit')
+        new_panel_port = int(request.form.get('panel_port'))
+        new_vpn_port = int(request.form.get('vpn_port'))
+        new_vpn_proto = request.form.get('vpn_protocol')
         new_public_ip = request.form.get('public_ip', curr_settings['public_ip'])
         new_server_name = request.form.get('server_name', dict(curr_settings).get('display_name', curr_settings['server_name']))
         
-        # We update these global panel settings on both rows (if multiple exist) to keep them synced
-        conn.execute("UPDATE settings SET panel_port=?, public_ip=?, display_name=?", (new_panel_port, new_public_ip, new_server_name))
+        conn.execute("UPDATE settings SET dns=?, dns2=?, conn_limit=?, panel_port=?, port=?, protocol=?, public_ip=?, display_name=? WHERE server_name='openvpn'", (dns1, dns2, new_limit, new_panel_port, new_vpn_port, new_vpn_proto, new_public_ip, new_server_name))
         if request.form.get('admin_user') and request.form.get('admin_pass'):
             conn.execute('DELETE FROM admin')
             conn.execute('INSERT INTO admin (username, password) VALUES (?, ?)', (request.form['admin_user'], request.form['admin_pass']))
         conn.commit()
+
+        needs_vpn_restart = False
+        if dns1 != curr_settings['dns'] or dns2 != dict(curr_settings).get('dns2') or new_limit != curr_settings['conn_limit']:
+            try:
+                with open('/etc/openvpn/server/server.conf', 'r') as f: lines = f.readlines()
+                with open('/etc/openvpn/server/server.conf', 'w') as f:
+                    for line in lines:
+                        if 'push "dhcp-option DNS' in line or 'duplicate-cn' in line: continue
+                        f.write(line)
+                    f.write(f'push "dhcp-option DNS {dns1}"\n')
+                    if dns2: f.write(f'push "dhcp-option DNS {dns2}"\n')
+                    if new_limit == "unlimited": f.write('duplicate-cn\n')
+                needs_vpn_restart = True
+            except: pass
+
+        if new_vpn_port != old_vpn_port or new_vpn_proto != old_vpn_proto:
+            os.system(f"sed -i 's/^port .*/port {new_vpn_port}/' /etc/openvpn/server/server.conf")
+            os.system(f"sed -i 's/^proto .*/proto {new_vpn_proto}/' /etc/openvpn/server/server.conf")
+            os.system(f"ufw delete allow {old_vpn_port}/{old_vpn_proto} >/dev/null 2>&1")
+            os.system(f"ufw allow {new_vpn_port}/{new_vpn_proto} >/dev/null 2>&1")
+            os.system(f"iptables -D INPUT -p {old_vpn_proto} --dport {old_vpn_port} -j ACCEPT")
+            os.system(f"iptables -I INPUT -p {new_vpn_proto} --dport {new_vpn_port} -j ACCEPT")
+            os.system("netfilter-persistent save > /dev/null 2>&1")
+            needs_vpn_restart = True
+
+        if needs_vpn_restart: os.system("systemctl restart openvpn-server@server")
+        
+        for u in conn.execute('SELECT system_name, password FROM users').fetchall(): 
+            subprocess.run(['bash', f'{APP_DIR}/scripts/add_user.sh', u['system_name'], u['password']], check=False)
 
         if new_panel_port != old_panel_port:
             os.system(f"ufw delete allow {old_panel_port}/tcp >/dev/null 2>&1")
             os.system(f"ufw allow {new_panel_port}/tcp >/dev/null 2>&1")
             os.system(f"iptables -D INPUT -p tcp --dport {old_panel_port} -j ACCEPT")
             os.system(f"iptables -I INPUT -p tcp --dport {new_panel_port} -j ACCEPT")
-            conn.close()
-            os.system("systemctl restart bluefalcon-panel")
-            return redirect(f"http://{new_public_ip}:{new_panel_port}/preferences?tab=settings")
+            os.system("netfilter-persistent save > /dev/null 2>&1")
+            os.system(f"sed -i 's/:{old_panel_port} /:{new_panel_port} /g' /etc/systemd/system/bluefalcon-panel.service")
+            os.system("nohup bash -c 'sleep 1 && systemctl daemon-reload && systemctl restart bluefalcon-panel' >/dev/null 2>&1 &")
             
-        conn.close()
         return redirect(url_for('preferences', tab='settings'))
         
     settings_row = conn.execute("SELECT * FROM settings WHERE server_name='openvpn'").fetchone()
