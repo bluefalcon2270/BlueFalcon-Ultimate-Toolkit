@@ -72,6 +72,7 @@ def init_db():
 
     conn.execute('CREATE TABLE IF NOT EXISTS users (display_name TEXT, system_name TEXT, password TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
     conn.execute('CREATE TABLE IF NOT EXISTS wg_users (display_name TEXT, system_name TEXT, pub_key TEXT, ip_address TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
+    conn.execute('CREATE TABLE IF NOT EXISTS proxy_users (display_name TEXT, uuid TEXT, password TEXT, exp_days INTEGER, status TEXT, rx INTEGER DEFAULT 0, tx INTEGER DEFAULT 0)')
     conn.execute('CREATE TABLE IF NOT EXISTS warp (is_installed INTEGER DEFAULT 0)')
     
     cursor = conn.cursor()
@@ -82,6 +83,10 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM settings WHERE server_name='wireguard'")
     if cursor.fetchone()[0] == 0:
         conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed) VALUES ('wireguard', 'udp', 51820, '8.8.8.8', '8.8.4.4', '1', 5000, 0)")
+        
+    cursor.execute("SELECT COUNT(*) FROM settings WHERE server_name='proxy'")
+    if cursor.fetchone()[0] == 0:
+        conn.execute("INSERT INTO settings (server_name, protocol, port, dns, dns2, conn_limit, panel_port, is_installed) VALUES ('proxy', 'tcp/udp', 443, 'www.microsoft.com', '', '1', 5000, 0)")
         
     cursor.execute("SELECT COUNT(*) FROM warp")
     if cursor.fetchone()[0] == 0:
@@ -481,7 +486,98 @@ def get_wg_qr(username):
             return process.stdout, 200, {'Content-Type': 'image/svg+xml'}
     return "QR Code generation failed.", 404
 
-# --- WARP Routing ---
+# --- PROXY ROUTES ---
+def run_proxy_task(action, port, sni):
+    log_file = '/tmp/system_task.log'
+    with open(log_file, 'w') as f:
+        if action == 'install':
+            process = subprocess.Popen(
+                ['bash', f'{APP_DIR}/vpn-scripts/proxy/core_setup.sh', str(port), sni],
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            )
+            for line in iter(process.stdout.readline, ''):
+                f.write(ansi_to_html(line))
+                f.flush()
+            process.wait()
+            
+            f.write(f"\n[DONE]\n")
+
+@app.route('/proxy')
+def proxy():
+    if 'admin_logged_in' not in session: return redirect(url_for('login'))
+    
+    conn = get_db()
+    is_installed_row = conn.execute("SELECT is_installed FROM settings WHERE server_name='proxy'").fetchone()
+    is_installed = is_installed_row[0] == 1 if is_installed_row else False
+    
+    proxy_settings = conn.execute("SELECT port, dns as sni, dns2 as keys FROM settings WHERE server_name='proxy'").fetchone()
+    port = proxy_settings['port'] if proxy_settings else 443
+    sni = proxy_settings['sni'] if proxy_settings else 'www.microsoft.com'
+    
+    # keys format: PUBKEY|SHORTID
+    keys = proxy_settings['keys'] if proxy_settings and proxy_settings['keys'] else "|"
+    pubkey = keys.split('|')[0] if '|' in keys else ""
+    shortid = keys.split('|')[1] if '|' in keys else ""
+    
+    users_data = []
+    if is_installed:
+        users = conn.execute('SELECT * FROM proxy_users').fetchall()
+        for u in users:
+            users_data.append(dict(u))
+            
+    server_ip = conn.execute("SELECT public_ip FROM settings WHERE server_name='openvpn'").fetchone()
+    server_ip = server_ip[0] if server_ip and server_ip[0] else ""
+    if not server_ip:
+        primary_if = os.popen("ip route show table main | awk '/default/ {print $5}' | head -1").read().strip()
+        server_ip = os.popen(f"curl --interface {primary_if} -s4 ifconfig.me").read().strip()
+    
+    conn.close()
+    
+    return render_template('proxy.html', is_installed=is_installed, port=port, sni=sni, users=users_data, server_ip=server_ip, pubkey=pubkey, shortid=shortid)
+
+@app.route('/api/proxy_stream')
+def proxy_stream():
+    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
+    action = request.args.get('action')
+    port = request.args.get('port', 443)
+    sni = request.args.get('sni', 'www.microsoft.com')
+    threading.Thread(target=run_proxy_task, args=(action, port, sni), daemon=True).start()
+    return jsonify({"status": "started"})
+
+@app.route('/api/add_proxy_user', methods=['POST'])
+def add_proxy_user():
+    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
+    name = request.form.get('name', '').strip()
+    exp = request.form.get('exp', '30')
+    if not name or not name.isalnum():
+        return jsonify({"status": "error", "message": "Invalid client name. Use alphanumeric characters only."})
+    
+    conn = get_db()
+    exists = conn.execute("SELECT 1 FROM proxy_users WHERE display_name=?", (name,)).fetchone()
+    conn.close()
+    if exists:
+        return jsonify({"status": "error", "message": "Client name already exists."})
+        
+    process = subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/proxy/add_user.sh', name, str(exp)], capture_output=True, text=True)
+    if process.returncode == 0:
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": process.stderr})
+
+@app.route('/api/del_proxy_user', methods=['POST'])
+def del_proxy_user():
+    if 'admin_logged_in' not in session: return jsonify({"error": "Unauthorized"}), 401
+    name = request.form.get('name')
+    if name:
+        subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/proxy/del_user.sh', name], check=False)
+    return jsonify({"status": "success"})
+
+@app.route('/proxy/action/<action>', methods=['POST', 'GET'])
+def proxy_action(action):
+    if 'admin_logged_in' not in session: return redirect(url_for('login'))
+    script_path = f"{APP_DIR}/vpn-scripts/proxy/action.sh"
+    os.system(f"bash {script_path} {action}")
+    return redirect(url_for('proxy'))
+
 def get_warp_trace():
     primary_if = os.popen("ip route show table main | awk '/default/ {print $5}' | head -1").read().strip()
     if not primary_if: primary_if = "eth0"

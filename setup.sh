@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # BlueFalcon Ultimate Toolkit (God Script)
-# Version: v4.8
+# Version: v4.9
 # Architecture: Optimized for Debian & Ubuntu (Bash/Python/SQLite Stack)
 # ==============================================================================
 
@@ -20,6 +20,7 @@ source "${SCRIPT_DIR}/modules/essential_tools.sh"
 source "${SCRIPT_DIR}/modules/panel_manager.sh"
 source "${SCRIPT_DIR}/modules/openvpn_manager.sh"
 source "${SCRIPT_DIR}/modules/wireguard_manager.sh"
+source "${SCRIPT_DIR}/modules/proxy_manager.sh"
 source "${SCRIPT_DIR}/modules/warp_manager.sh"
 source "${SCRIPT_DIR}/modules/backup_manager.sh"
 source "${SCRIPT_DIR}/modules/logs_manager.sh"
@@ -36,10 +37,11 @@ show_main_menu() {
     echo "1. Web Panel"
     echo "2. OpenVPN"
     echo "3. WireGuard"
-    echo "4. WARP"
-    echo "5. Essentials"
-    echo "6. Backup/Restore"
-    echo "7. Logs"
+    echo "4. Next-Gen Proxy (Xray/Hysteria)"
+    echo "5. WARP"
+    echo "6. Essentials"
+    echo "7. Backup/Restore"
+    echo "8. Logs"
     echo "0. Exit"
     echo ""
 }
@@ -55,10 +57,11 @@ main() {
             1) manage_panel ;;
             2) manage_openvpn ;;
             3) manage_wireguard ;;
-            4) manage_warp ;;
-            5) manage_essential ;;
-            6) manage_backup ;;
-            7) manage_logs ;;
+            4) manage_proxy ;;
+            5) manage_warp ;;
+            6) manage_essential ;;
+            7) manage_backup ;;
+            8) manage_logs ;;
             0) 
                 echo -e "\n[ ${GREEN}✔${NC} ] Exiting toolkit. Session terminated cleanly.\n"
                 tput cnorm

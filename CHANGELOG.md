@@ -1,6 +1,14 @@
-VERSION="4.8"
+VERSION="4.9"
 
 # Changelog
+
+## [v4.9] - 2026-06-30
+### Added
+- **Next-Gen Proxy Engine Integration**: Completely rewrote the toolkit architecture to natively support multi-protocol stealth proxies via a unified "Next-Gen Proxy" manager. The system now seamlessly installs and manages **Xray-core** and **Hysteria-core** side-by-side. 
+- **VLESS-TCP-XTLS-Reality**: Added automated support for the world's most advanced stealth protocol via Xray.
+- **VLESS-xHTTP-Reality**: Added support for Xray's latest xHTTP transport layer.
+- **Hysteria 2**: Added the Hysteria 2 UDP engine natively alongside Xray for brutal speed optimization (gaming/downloads).
+- **Automated VLESS/Hysteria Link Generation**: The Web Panel now features a new UI tab that automatically manages Proxy clients and generates one-click `vless://` and `hysteria2://` share links, bypassing the need to use complex third-party GUIs.
 
 ## [v4.8] - 2026-06-30
 ### Fixed
