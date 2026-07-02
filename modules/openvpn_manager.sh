@@ -37,7 +37,7 @@ ovpn_add_user() {
     update_users_db_file
 
     # Run OpenVPN Script
-    bash "${APP_DIR}/scripts/add_user.sh" "$sys_name" "$password" >/dev/null 2>&1
+    bash "${APP_DIR}/vpn-scripts/openvpn/add_user.sh" "$sys_name" "$password" >/dev/null 2>&1
     
     echo -e "\n[ ${GREEN}✔${NC} ] User '$disp_name' created successfully!"
     pause_execution

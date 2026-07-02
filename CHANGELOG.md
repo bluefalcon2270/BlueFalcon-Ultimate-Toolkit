@@ -1,6 +1,10 @@
-VERSION="5.1"
+VERSION="5.2"
 
 # Changelog
+
+## [v5.2] - 2026-07-02
+### Changed
+- **Architectural Unification**: Refactored the terminal and web panel backends to use a single source of truth. Eliminated massively duplicated WARP installation code in `warp_manager.sh`, replacing it with a direct invocation of the web panel's `action.sh` script. Removed confusing file copying logic from `panel_manager.sh` and updated `app.py` and `openvpn_manager.sh` to natively point to the `vpn-scripts` directory. This permanently resolves drift bugs across the codebase.
 
 ## [v5.1] - 2026-07-02
 ### Changed

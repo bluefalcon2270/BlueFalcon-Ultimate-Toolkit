@@ -215,7 +215,7 @@ def install_execute():
         yield "data: 🦅 INITIALIZING BLUEFALCON DEPLOYMENT SEQUENCE\n\n"
         time.sleep(1)
         
-        fix_cmd = "sed -i -E \"s/curl.*ifconfig\\.me|curl.*api\\.ipify\\.org/curl --interface \\$(ip route | awk '\\/default\\/ {print \\$5}' | head -1) -s4 ifconfig.me/g\" /opt/bluefalcon-ultimate-toolkit/panel/scripts/*.sh 2>/dev/null"
+        fix_cmd = "sed -i -E \"s/curl.*ifconfig\\.me|curl.*api\\.ipify\\.org/curl --interface \\$(ip route | awk '\\/default\\/ {print \\$5}' | head -1) -s4 ifconfig.me/g\" /opt/bluefalcon-ultimate-toolkit/panel/vpn-scripts/*/*.sh 2>/dev/null"
         os.system(fix_cmd)
         
         if ovpn_pending:
@@ -321,7 +321,7 @@ def openvpn_dashboard():
             with open("/etc/openvpn/server/auth/users.db", "w") as f:
                 for u in conn.execute('SELECT system_name, password, exp_days, status FROM users').fetchall():
                     f.write(f"{u['system_name']}:{u['password']}:{u['exp_days']}:{u['status']}\n")
-            subprocess.run(['bash', f'{APP_DIR}/scripts/add_user.sh', sys_name, p], check=False)
+            subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/openvpn/add_user.sh', sys_name, p], check=False)
         return redirect(url_for('openvpn_dashboard'))
 
     users = conn.execute('SELECT * FROM users').fetchall()
@@ -517,7 +517,7 @@ def warp_dashboard():
 @app.route('/warp/action/<action>', methods=['POST', 'GET'])
 def warp_action(action):
     if 'admin_logged_in' not in session: return redirect(url_for('login'))
-    script_path = f"{APP_DIR}/scripts/action.sh"
+    script_path = f"{APP_DIR}/vpn-scripts/warp/action.sh"
     if action == "toggle": 
         os.system(f"bash {script_path} toggle")
     return redirect(url_for('warp_dashboard'))
@@ -561,7 +561,7 @@ def warp_stream():
     action = request.args.get('action')
     target = request.args.get('target', '3')
     license_key = request.args.get('license', 'free')
-    script_path = f"{APP_DIR}/scripts/action.sh"
+    script_path = f"{APP_DIR}/vpn-scripts/warp/action.sh"
     
     # Start background thread
     threading.Thread(target=run_warp_script, args=(action, script_path, target, license_key)).start()
@@ -854,7 +854,7 @@ def preferences():
         if needs_vpn_restart: os.system("systemctl restart openvpn-server@server")
         
         for u in conn.execute('SELECT system_name, password FROM users').fetchall(): 
-            subprocess.run(['bash', f'{APP_DIR}/scripts/add_user.sh', u['system_name'], u['password']], check=False)
+            subprocess.run(['bash', f'{APP_DIR}/vpn-scripts/openvpn/add_user.sh', u['system_name'], u['password']], check=False)
 
         if new_panel_port != old_panel_port:
             os.system(f"ufw delete allow {old_panel_port}/tcp >/dev/null 2>&1")

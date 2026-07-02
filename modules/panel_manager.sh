@@ -14,13 +14,12 @@ install_panel() {
     CURRENT_LOG="${LOG_FILE}" run_with_spinner "Installing dependencies" apt-get install -y python3 python3-flask python3-gunicorn python3-psutil sqlite3 curl cron gunicorn iptables iptables-persistent iproute2 netcat-openbsd
 
     deploy_panel_files() {
-        mkdir -p "${APP_DIR}/configs" /var/log/bluefalcon-panel "${APP_DIR}/scripts"
+        mkdir -p "${APP_DIR}/configs" /var/log/bluefalcon-panel
         local REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
         
         cp -r "${REPO_DIR}/panel/"* "${APP_DIR}/"
-        cp -r "${REPO_DIR}/vpn-scripts/openvpn/"* "${APP_DIR}/scripts/"
-        cp -r "${REPO_DIR}/vpn-scripts/warp/"* "${APP_DIR}/scripts/"
-        chmod +x "${APP_DIR}/scripts/"*.sh
+        cp -r "${REPO_DIR}/vpn-scripts" "${APP_DIR}/"
+        chmod +x "${APP_DIR}/vpn-scripts/"*/*.sh
     }
     
     CURRENT_LOG="${LOG_FILE}" run_with_spinner "Deploying Material Design Application" deploy_panel_files
@@ -33,7 +32,7 @@ install_panel() {
 
     cat > /etc/cron.daily/bluefalcon-panel-expiry << EOF
 #!/bin/bash
-python3 ${APP_DIR}/scripts/expiry.py
+python3 ${APP_DIR}/vpn-scripts/openvpn/expiry.py
 EOF
     chmod +x /etc/cron.daily/bluefalcon-panel-expiry
 
