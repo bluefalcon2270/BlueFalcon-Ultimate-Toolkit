@@ -15,10 +15,10 @@ install_warp() {
     export LICENSE="$license"
     source "${SCRIPT_DIR}/vpn-scripts/warp/action.sh"
     
-    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Installing Prerequisites" install_warp_prereqs >> "${WARP_LOG}" 2>&1
-    install_wgcf >> "${WARP_LOG}" 2>&1
-    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Registering Profile" register_account >> "${WARP_LOG}" 2>&1
-    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Building Configuration" build_config >> "${WARP_LOG}" 2>&1
+    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Installing Prerequisites" install_warp_prereqs
+    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Installing WGCF Binary" install_wgcf
+    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Registering Profile" register_account
+    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Building Configuration" build_config
     
     if ip link show wgcf >/dev/null 2>&1; then
         echo -e "\n[ ${GREEN}✔${NC} ] WARP Installation Completed Successfully!"
@@ -36,8 +36,7 @@ toggle_warp_service() {
     fi
     
     source "${SCRIPT_DIR}/vpn-scripts/warp/action.sh"
-    toggle_warp >> "${WARP_LOG}" 2>&1
-    
+    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Toggling WARP" toggle_warp    
     if ip link show wgcf >/dev/null 2>&1; then
         echo -e "[ ${GREEN}✔${NC} ] WARP Service Started."
     else
@@ -50,7 +49,7 @@ uninstall_warp() {
     echo ""
     if [ -f "/etc/wireguard/wgcf.conf" ] || command -v wgcf >/dev/null 2>&1; then
         source "${SCRIPT_DIR}/vpn-scripts/warp/action.sh"
-        CURRENT_LOG="${WARP_LOG}" run_with_spinner "Uninstalling WARP" uninstall_warp >> "${WARP_LOG}" 2>&1
+        CURRENT_LOG="${WARP_LOG}" run_with_spinner "Uninstalling WARP" uninstall_warp
         echo -e "\n[ ${GREEN}✔${NC} ] WARP Uninstalled."
     else
         echo -e "[ ${RED}✖${NC} ] WARP is not installed."
