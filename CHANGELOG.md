@@ -1,6 +1,10 @@
-VERSION="4.8"
+VERSION="4.9"
 
 # Changelog
+
+## [v4.9] - 2026-07-02
+### Fixed
+- **WARP DNS Resolution Fix**: Removed the explicit `DNS = 8.8.8.8...` line from the generated `wgcf.conf` payload to resolve a critical startup error (`dbus-org.freedesktop.resolve1.service not found`) on VPS distributions where `systemd-resolved` is missing or inactive. WARP will now correctly rely on the server's native DNS resolution over the tunnel.
 
 ## [v4.8] - 2026-06-30
 ### Fixed
