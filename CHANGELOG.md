@@ -1,6 +1,10 @@
-VERSION="5.5"
+VERSION="5.6"
 
 # Changelog
+
+## [v5.6] - 2026-07-02
+### Fixed
+- **Configuration Hanging**: Fixed an issue where running the WARP installation while a WARP profile already existed would cause the terminal installation to hang permanently at "Building Configuration". The `wgcf generate` command was silently waiting for user confirmation to overwrite the existing profile.
 
 ## [v5.5] - 2026-07-02
 ### Fixed

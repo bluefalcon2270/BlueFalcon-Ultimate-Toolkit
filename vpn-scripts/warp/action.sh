@@ -49,6 +49,7 @@ register_account() {
 build_config() {
     echo "[INFO] Generating WireGuard configuration file..."
     cd /etc/warp || exit
+    rm -f wgcf-profile.conf
     wgcf generate >/dev/null 2>&1
     [ -d "/etc/wireguard" ] || mkdir -p "/etc/wireguard"
     
