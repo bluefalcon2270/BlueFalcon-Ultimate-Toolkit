@@ -1,6 +1,10 @@
-VERSION="5.7"
+VERSION="5.8"
 
 # Changelog
+
+## [v5.8] - 2026-07-02
+### Fixed
+- **SSH Disconnection**: Fixed a critical bug introduced during modularization (v5.4+) where sourcing the `action.sh` file internally overwrote the `TARGET` variable with the `LICENSE` string. This caused the VPS's anti-lockout routing rules (`PostUp` and `PreUp`) to be completely bypassed, forcing all VPS traffic—including SSH connections—through WARP, instantly dropping the user's connection during "Building Configuration".
 
 ## [v5.7] - 2026-07-02
 ### Fixed

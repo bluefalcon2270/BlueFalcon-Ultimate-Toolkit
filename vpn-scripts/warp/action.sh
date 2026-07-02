@@ -3,9 +3,9 @@
 # BlueFalcon Toolkit - WARP Background Engine
 # ==============================================================================
 
-ACTION=$1
-TARGET=${2:-3}
-LICENSE=${3:-}
+ACTION=${ACTION:-$1}
+TARGET=${TARGET:-${2:-3}}
+LICENSE=${LICENSE:-$3}
 
 WGCF_conf="/etc/wireguard/wgcf.conf"
 Profile_conf="/etc/warp/wgcf-profile.conf"
