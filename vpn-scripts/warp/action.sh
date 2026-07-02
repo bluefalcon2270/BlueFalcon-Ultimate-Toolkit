@@ -11,38 +11,45 @@ WGCF_conf="/etc/wireguard/wgcf.conf"
 Profile_conf="/etc/warp/wgcf-profile.conf"
 Wgcf_account="/etc/warp/wgcf-account.toml"
 
-install_warp() {
+install_warp_prereqs() {
     export DEBIAN_FRONTEND=noninteractive
     echo "[INFO] Updating package repositories..."
-    apt-get update -y
+    apt-get update -y >/dev/null 2>&1
     
     echo "[INFO] Installing core network dependencies..."
     local dns_pkg="resolvconf"
     if apt-get install -s openresolv >/dev/null 2>&1; then dns_pkg="openresolv"; fi
-    apt-get install -y curl gnupg lsb-release ca-certificates iproute2 wireguard-tools "${dns_pkg}"
-    
+    apt-get install -y curl gnupg lsb-release ca-certificates iproute2 wireguard-tools "${dns_pkg}" >/dev/null 2>&1
+}
+
+install_wgcf() {
     if ! command -v wgcf >/dev/null 2>&1; then
         echo "[INFO] Downloading WGCF binary..."
-        curl -fsSL git.io/wgcf.sh -o /tmp/wgcf.sh
-        bash /tmp/wgcf.sh
+        curl -fsSL git.io/wgcf.sh -o /tmp/wgcf.sh >/dev/null 2>&1
+        bash /tmp/wgcf.sh >/dev/null 2>&1
     fi
+}
 
+register_account() {
     mkdir -p /etc/warp
     cd /etc/warp || exit
     
     if [[ ! -f "$Wgcf_account" ]]; then 
         echo "[INFO] Registering free Cloudflare profile..."
-        wgcf register --accept-tos
+        wgcf register --accept-tos >/dev/null 2>&1
     fi
 
     if [ -n "$LICENSE" ] && [ "$LICENSE" != "free" ]; then
         echo "[INFO] Upgrading profile to WARP+ Premium License..."
         sed -i "s/\(license_key = \).*/\1'${LICENSE}'/" "$Wgcf_account"
-        wgcf update --config "$Wgcf_account"
+        wgcf update --config "$Wgcf_account" >/dev/null 2>&1
     fi
+}
 
+build_config() {
     echo "[INFO] Generating WireGuard configuration file..."
-    wgcf generate
+    cd /etc/warp || exit
+    wgcf generate >/dev/null 2>&1
     [ -d "/etc/wireguard" ] || mkdir -p "/etc/wireguard"
     
     local PrivateKey=$(grep ^PrivateKey "${Profile_conf}" | cut -d= -f2- | awk '$1=$1')
@@ -96,7 +103,7 @@ EOF
     sysctl --system >/dev/null 2>&1
 
     (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf"; echo "@reboot sleep 20 && systemctl restart wg-quick@wgcf") | crontab -
-    systemctl enable --now wg-quick@wgcf
+    systemctl enable --now wg-quick@wgcf >/dev/null 2>&1
 }
 
 toggle_warp() {
@@ -117,15 +124,22 @@ uninstall_warp() {
     
     echo "[INFO] Purging Cloudflare packages..."
     export DEBIAN_FRONTEND=noninteractive
-    apt-get purge cloudflare-warp -y
+    apt-get purge cloudflare-warp -y >/dev/null 2>&1
     
     echo "[INFO] Removing routing rules and config files..."
     rm -rf /etc/warp /etc/wireguard/wgcf* /usr/local/bin/wgcf /etc/sysctl.d/99-warp-routing.conf
     ip link delete wgcf >/dev/null 2>&1
 }
 
-case "$ACTION" in
-    install) install_warp ;;
-    toggle) toggle_warp ;;
-    uninstall) uninstall_warp ;;
-esac
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    case "$ACTION" in
+        install)
+            install_warp_prereqs
+            install_wgcf
+            register_account
+            build_config
+            ;;
+        toggle) toggle_warp ;;
+        uninstall) uninstall_warp ;;
+    esac
+fi

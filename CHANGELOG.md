@@ -1,6 +1,10 @@
-VERSION="5.3"
+VERSION="5.4"
 
 # Changelog
+
+## [v5.4] - 2026-07-02
+### Fixed
+- **Terminal UI Granularity**: Restored the granular, multi-step loading spinners for the WARP installation process in the terminal menu that were temporarily removed during the architectural unification. Refactored the core `action.sh` script to be modular, allowing the terminal to execute and display visual spinners for each individual step (Prerequisites, Profile Registration, Configuration) while still maintaining a single shared codebase with the web panel.
 
 ## [v5.3] - 2026-07-02
 ### Fixed
