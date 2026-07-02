@@ -1,6 +1,10 @@
-VERSION="5.2"
+VERSION="5.3"
 
 # Changelog
+
+## [v5.3] - 2026-07-02
+### Fixed
+- **WARP Incoming Connection Timeout**: Added `rp_filter=2` (loose reverse path filtering) to sysctl during WARP installation. This permanently fixes a kernel bug where incoming connections to the VPS (like Let's Encrypt SSL validation on port 80 or 3x-ui panel access) would be falsely flagged as spoofed martians and dropped while the `0.0.0.0/0` WARP route was active.
 
 ## [v5.2] - 2026-07-02
 ### Changed

@@ -88,6 +88,13 @@ Endpoint = engage.cloudflareclient.com:2408
 EOF
 
     echo "[INFO] Securing routes and enabling Background Service..."
+    
+    cat <<EOF >/etc/sysctl.d/99-warp-routing.conf
+net.ipv4.conf.all.rp_filter = 2
+net.ipv4.conf.default.rp_filter = 2
+EOF
+    sysctl --system >/dev/null 2>&1
+
     (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf"; echo "@reboot sleep 20 && systemctl restart wg-quick@wgcf") | crontab -
     systemctl enable --now wg-quick@wgcf
 }
@@ -113,7 +120,7 @@ uninstall_warp() {
     apt-get purge cloudflare-warp -y
     
     echo "[INFO] Removing routing rules and config files..."
-    rm -rf /etc/warp /etc/wireguard/wgcf* /usr/local/bin/wgcf
+    rm -rf /etc/warp /etc/wireguard/wgcf* /usr/local/bin/wgcf /etc/sysctl.d/99-warp-routing.conf
     ip link delete wgcf >/dev/null 2>&1
 }
 
