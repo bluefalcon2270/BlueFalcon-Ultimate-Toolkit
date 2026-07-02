@@ -1,6 +1,10 @@
-VERSION="5.8"
+VERSION="5.9"
 
 # Changelog
+
+## [v5.9] - 2026-07-02
+### Fixed
+- **WARP Toggle**: Fixed an unbound variable error (`$1: unbound variable`) in `vpn-scripts/warp/action.sh` when the script is sourced without arguments during WARP toggle operations.
 
 ## [v5.8] - 2026-07-02
 ### Fixed
