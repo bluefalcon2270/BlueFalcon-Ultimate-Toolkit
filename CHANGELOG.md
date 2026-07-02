@@ -1,6 +1,10 @@
-VERSION="5.4"
+VERSION="5.5"
 
 # Changelog
+
+## [v5.5] - 2026-07-02
+### Fixed
+- **Terminal Menu Freezing**: Fixed a bug introduced in v5.4 where the terminal would appear frozen and blank when installing or uninstalling WARP. The loading spinner's visual output was accidentally being redirected into the log file rather than the terminal screen.
 
 ## [v5.4] - 2026-07-02
 ### Fixed
