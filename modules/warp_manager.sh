@@ -10,30 +10,19 @@ install_warp_prereqs() {
     export DEBIAN_FRONTEND=noninteractive
     dpkg --configure -a >> "${WARP_LOG}" 2>&1 || true
     apt-get update -y >> "${WARP_LOG}" 2>&1
-    apt-get install -y curl gnupg lsb-release ca-certificates >> "${WARP_LOG}" 2>&1
+    
+    local dns_pkg="resolvconf"
+    if apt-get install -s openresolv >/dev/null 2>&1; then 
+        dns_pkg="openresolv"
+    fi
+    
+    apt-get install -y curl gnupg lsb-release ca-certificates iproute2 wireguard-tools "${dns_pkg}" >> "${WARP_LOG}" 2>&1
 }
 
 install_wgcf() {
     if command -v wgcf >/dev/null 2>&1; then return 0; fi
     curl -fsSL git.io/wgcf.sh -o /tmp/wgcf.sh >> "${WARP_LOG}" 2>&1
     CURRENT_LOG="${WARP_LOG}" run_with_spinner "Installing WGCF Binary" bash /tmp/wgcf.sh >> "${WARP_LOG}" 2>&1
-}
-
-install_cloudflare_packages() {
-    if command -v warp-cli >/dev/null 2>&1; then return 0; fi
-    export DEBIAN_FRONTEND=noninteractive
-    . /etc/os-release
-    curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg >> "${WARP_LOG}" 2>&1
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/cloudflare-client.list >/dev/null
-    apt-get update -y >> "${WARP_LOG}" 2>&1
-    
-    # Bulletproof check: Simulate installation to see if openresolv actually exists
-    local dns_pkg="resolvconf"
-    if apt-get install -s openresolv >/dev/null 2>&1; then 
-        dns_pkg="openresolv"
-    fi
-    
-    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Installing Cloudflare Packages" apt-get install cloudflare-warp iproute2 "${dns_pkg}" wireguard-tools -y >> "${WARP_LOG}" 2>&1
 }
 
 register_account() {
@@ -123,13 +112,8 @@ EOF
 execute_warp_install() {
     local target=$1
     echo ""
-    install_warp_prereqs
+    CURRENT_LOG="${WARP_LOG}" run_with_spinner "Installing Prerequisites" install_warp_prereqs
     install_wgcf
-    if ! install_cloudflare_packages; then
-        echo -e "\n[ ${RED}✖${NC} ] Critical failure during package installation. Aborting."
-        sleep 3
-        return
-    fi
     register_account
     CURRENT_LOG="${WARP_LOG}" run_with_spinner "Building wgcf.conf" build_config "$target"
     (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf;systemctl restart warp-svc") | crontab -

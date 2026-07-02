@@ -1,6 +1,10 @@
-VERSION="5.0"
+VERSION="5.1"
 
 # Changelog
+
+## [v5.1] - 2026-07-02
+### Changed
+- **Terminal WARP Installer Synchronization**: Eradicated the outdated `cloudflare-warp` desktop daemon installation logic from the terminal installer (`modules/warp_manager.sh`). The terminal now perfectly matches the web panel's lightweight `wgcf` engine. This drops the terminal installation time from ~10 minutes down to 20 seconds. Also attached a loading spinner to the prerequisite installation so it no longer appears frozen.
 
 ## [v5.0] - 2026-07-02
 ### Fixed
