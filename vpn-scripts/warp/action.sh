@@ -62,18 +62,22 @@ EOF
     local IPv6_addr=$(ip -6 addr show "$DEFAULT_IF" | awk '/inet6 / {print $2}' | cut -d/ -f1 | grep -v '^fe80' | head -1)
 
     if [ "$TARGET" == "1" ] || [ "$TARGET" == "3" ]; then
-        cat <<EOF >>${WGCF_conf}
+        if [ -n "$IPv4_addr" ]; then
+            cat <<EOF >>${WGCF_conf}
 PreUp = ip -4 rule delete from ${IPv4_addr} lookup main prio 18 2>/dev/null || true
 PostUp = ip -4 rule add from ${IPv4_addr} lookup main prio 18
 PostDown = ip -4 rule delete from ${IPv4_addr} lookup main prio 18 2>/dev/null || true
 EOF
+        fi
     fi
     if [ "$TARGET" == "2" ] || [ "$TARGET" == "3" ]; then
-        cat <<EOF >>${WGCF_conf}
+        if [ -n "$IPv6_addr" ]; then
+            cat <<EOF >>${WGCF_conf}
 PreUp = ip -6 rule delete from ${IPv6_addr} lookup main prio 18 2>/dev/null || true
 PostUp = ip -6 rule add from ${IPv6_addr} lookup main prio 18
 PostDown = ip -6 rule delete from ${IPv6_addr} lookup main prio 18 2>/dev/null || true
 EOF
+        fi
     fi
 
     cat <<EOF >>${WGCF_conf}

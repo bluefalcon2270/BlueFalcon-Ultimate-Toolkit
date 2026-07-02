@@ -1,6 +1,10 @@
-VERSION="4.9"
+VERSION="5.0"
 
 # Changelog
+
+## [v5.0] - 2026-07-02
+### Fixed
+- **WARP IPv6 Routing Crash**: Added conditional checks to the WireGuard configuration builder so that `ip -6 rule` PreUp/PostUp commands are only generated if the VPS actually possesses a public IPv6 address. This prevents a fatal `inet6 prefix is expected rather than "lookup"` error from crashing `wg-quick` on IPv4-only servers.
 
 ## [v4.9] - 2026-07-02
 ### Fixed

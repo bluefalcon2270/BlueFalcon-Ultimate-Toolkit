@@ -66,10 +66,14 @@ EOF
 
     case $1 in
         1)
-            cat <<EOF >>${WGCF_conf}
+            if [ -n "$IPv4_addr" ]; then
+                cat <<EOF >>${WGCF_conf}
 PreUp = ip -4 rule delete from ${IPv4_addr} lookup main prio 18 2>/dev/null || true
 PostUp = ip -4 rule add from ${IPv4_addr} lookup main prio 18
 PostDown = ip -4 rule delete from ${IPv4_addr} lookup main prio 18 2>/dev/null || true
+EOF
+            fi
+            cat <<EOF >>${WGCF_conf}
 [Peer]
 PublicKey = ${PublicKey}
 AllowedIPs = 0.0.0.0/0
@@ -77,10 +81,14 @@ Endpoint = 162.159.192.1:2408
 EOF
             ;;
         2)
-            cat <<EOF >>${WGCF_conf}
+            if [ -n "$IPv6_addr" ]; then
+                cat <<EOF >>${WGCF_conf}
 PreUp = ip -6 rule delete from ${IPv6_addr} lookup main prio 18 2>/dev/null || true
 PostUp = ip -6 rule add from ${IPv6_addr} lookup main prio 18
 PostDown = ip -6 rule delete from ${IPv6_addr} lookup main prio 18 2>/dev/null || true
+EOF
+            fi
+            cat <<EOF >>${WGCF_conf}
 [Peer]
 PublicKey = ${PublicKey}
 AllowedIPs = ::/0
@@ -88,13 +96,21 @@ Endpoint = [2606:4700:d0::a29f:c001]:2408
 EOF
             ;;
         3)
-            cat <<EOF >>${WGCF_conf}
+            if [ -n "$IPv4_addr" ]; then
+                cat <<EOF >>${WGCF_conf}
 PreUp = ip -4 rule delete from ${IPv4_addr} lookup main prio 18 2>/dev/null || true
 PostUp = ip -4 rule add from ${IPv4_addr} lookup main prio 18
 PostDown = ip -4 rule delete from ${IPv4_addr} lookup main prio 18 2>/dev/null || true
+EOF
+            fi
+            if [ -n "$IPv6_addr" ]; then
+                cat <<EOF >>${WGCF_conf}
 PreUp = ip -6 rule delete from ${IPv6_addr} lookup main prio 18 2>/dev/null || true
 PostUp = ip -6 rule add from ${IPv6_addr} lookup main prio 18
 PostDown = ip -6 rule delete from ${IPv6_addr} lookup main prio 18 2>/dev/null || true
+EOF
+            fi
+            cat <<EOF >>${WGCF_conf}
 [Peer]
 PublicKey = ${PublicKey}
 AllowedIPs = 0.0.0.0/0,::/0
