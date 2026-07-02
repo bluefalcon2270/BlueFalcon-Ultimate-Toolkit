@@ -50,7 +50,7 @@ build_config() {
     echo "[INFO] Generating WireGuard configuration file..."
     cd /etc/warp || exit
     rm -f wgcf-profile.conf
-    wgcf generate >/dev/null 2>&1
+    timeout 30 setsid wgcf generate >/dev/null 2>&1
     [ -d "/etc/wireguard" ] || mkdir -p "/etc/wireguard"
     
     local PrivateKey=$(grep ^PrivateKey "${Profile_conf}" | cut -d= -f2- | awk '$1=$1')
@@ -104,7 +104,7 @@ EOF
     sysctl --system >/dev/null 2>&1
 
     (crontab -l 2>/dev/null | grep -v "wg-quick@wgcf"; echo "0 4 * * * systemctl restart wg-quick@wgcf"; echo "@reboot sleep 20 && systemctl restart wg-quick@wgcf") | crontab -
-    systemctl enable --now wg-quick@wgcf >/dev/null 2>&1
+    timeout 60 systemctl --no-ask-password enable --now wg-quick@wgcf >/dev/null 2>&1
 }
 
 toggle_warp() {

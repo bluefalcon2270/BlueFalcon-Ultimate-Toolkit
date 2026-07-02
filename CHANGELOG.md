@@ -1,6 +1,10 @@
-VERSION="5.6"
+VERSION="5.7"
 
 # Changelog
+
+## [v5.7] - 2026-07-02
+### Fixed
+- **Terminal Hanging**: Fixed a deep technical issue where the `wgcf generate` binary would indefinitely hang in the background when running from the terminal menu. The Go-based binary was attempting to probe the interactive TTY session (even when there was no prompt to display), which caused the Linux kernel to suspend it via a `SIGTTIN` signal. It is now safely detached using `setsid` and wrapped with timeouts to guarantee the installation never stalls.
 
 ## [v5.6] - 2026-07-02
 ### Fixed
