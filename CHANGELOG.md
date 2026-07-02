@@ -1,14 +1,6 @@
-VERSION="5.4"
+VERSION="5.2"
 
 # Changelog
-
-## [v5.4] - 2026-07-02
-### Fixed
-- **Terminal UI Granularity**: Restored the granular, multi-step loading spinners for the WARP installation process in the terminal menu that were temporarily removed during the architectural unification. Refactored the core `action.sh` script to be modular, allowing the terminal to execute and display visual spinners for each individual step (Prerequisites, Profile Registration, Configuration) while still maintaining a single shared codebase with the web panel.
-
-## [v5.3] - 2026-07-02
-### Fixed
-- **WARP Incoming Connection Timeout**: Added `rp_filter=2` (loose reverse path filtering) to sysctl during WARP installation. This permanently fixes a kernel bug where incoming connections to the VPS (like Let's Encrypt SSL validation on port 80 or 3x-ui panel access) would be falsely flagged as spoofed martians and dropped while the `0.0.0.0/0` WARP route was active.
 
 ## [v5.2] - 2026-07-02
 ### Changed
